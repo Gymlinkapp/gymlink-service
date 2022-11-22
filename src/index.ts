@@ -1,8 +1,7 @@
-import { PrismaClient } from '@prisma/client';
 import express from 'express';
-import authRouter from './routes/auth';
+import { createClient } from '@supabase/supabase-js';
 import userRouter from './routes/users';
-import { createClient, SupabaseClientOptions } from '@supabase/supabase-js';
+import authRouter from './routes/auth';
 
 export const supabase = createClient(
   `https://${process.env.SUPABASE_PROJECT_ID}.supabase.co`,
