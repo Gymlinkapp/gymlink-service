@@ -1,0 +1,74 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  phoneNumber String   @unique
+  firstName   String
+  lastName    String
+  age         Int
+  images      String[]
+  tags        String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  chats              Chat[]
+  friendRequests     FriendRequest[] @relation("fromUser")
+  sentFriendRequests FriendRequest[] @relation("toUser")
+  friends            Friend[]        @relation("friends")
+
+  tempJWT String?
+
+  Message Message[]
+}
+
+model FriendRequest {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  fromUser User @relation("fromUser", fields: [fromUserId], references: [id])
+  toUser   User @relation("toUser", fields: [toUserId], references: [id])
+
+  fromUserId String
+  toUserId   String
+  userId     String?
+}
+
+model Friend {
+  id      String @id @default(cuid())
+  friends User[] @relation("friends")
+}
+
+model Chat {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  participants User[]
+  messages     Message[]
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  chatId String
+  chat   Chat   @relation(fields: [chatId], references: [id])
+
+  senderId String
+  sender   User   @relation(fields: [senderId], references: [id])
+
+  content String
+}
