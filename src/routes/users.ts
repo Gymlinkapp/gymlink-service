@@ -4,6 +4,9 @@ import { supabase } from '..';
 import multer from 'multer';
 import { readFileSync } from 'fs';
 import { User } from '@prisma/client';
+import { decode } from 'jsonwebtoken';
+import { JWT } from '../types';
+import { isUserSignedIn } from '../util/user/helpers';
 
 const prisma = new PrismaClient();
 
@@ -76,4 +79,41 @@ userRouter.post(
   }
 );
 
+// edit a user
+userRouter.post('/users/:id/edit', async (req, res) => {
+  const { id } = req.params;
+
+  // find user
+  const user = await prisma.user.findFirst({
+    where: {
+      id: id,
+    },
+  });
+
+  // if the user is signedin
+  let decodedEmail: JWT | null = null;
+  if (user && (await isUserSignedIn(user.id)) && user.tempJWT) {
+    decodedEmail = decode(user.tempJWT) as JWT;
+  }
+
+  // if the user is found and the email matches the email in the token
+  if (user && decodedEmail && decodedEmail.email === user.email) {
+    const { firstName, lastName, email, age } = req.body;
+
+    const updatedUser = await prisma.user.update({
+      where: {
+        id: id,
+      },
+      data: {
+        firstName,
+        lastName,
+        email,
+        age,
+      },
+    });
+    res.json({ message: 'user updated', user: updatedUser });
+  } else {
+    res.json({ message: 'User is not signed in.' });
+  }
+});
 export default userRouter;

@@ -2,6 +2,7 @@ import express from 'express';
 import { PrismaClient } from '@prisma/client';
 import { Twilio } from 'twilio';
 import { decode, sign } from 'jsonwebtoken';
+import { isUserSignedIn } from '../util/user/helpers';
 const accountSid = process.env.TWILIO_ACCOUNT_SID || '';
 const authToken = process.env.TWILIO_AUTH_TOKEN || '';
 const client = new Twilio(accountSid, authToken);
@@ -88,7 +89,7 @@ authRouter.post('/auth/signin', async (req, res) => {
   });
 
   if (user) {
-    res.json({ message: 'user signed in', user: user });
+    res.json({ message: 'user signed in', user: user.tempJWT });
   } else {
     res.json({ message: 'error' });
   }
@@ -96,14 +97,22 @@ authRouter.post('/auth/signin', async (req, res) => {
 
 // sign out
 authRouter.post('/auth/signout', async (req, res) => {
-  const user = await prisma.user.update({
+  const user = await prisma.user.findFirst({
     where: {
       email: req.body.email,
     },
-    data: {
-      tempJWT: '',
-    },
   });
+
+  if (user && (await isUserSignedIn(user.id))) {
+    await prisma.user.update({
+      where: {
+        email: req.body.email,
+      },
+      data: {
+        tempJWT: '',
+      },
+    });
+  }
 });
 
 export default authRouter;
