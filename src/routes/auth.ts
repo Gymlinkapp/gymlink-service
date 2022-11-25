@@ -48,6 +48,7 @@ authRouter.post('/auth/sendsms', async (req, res) => {
         data: {
           phoneNumber: req.body.phoneNumber,
           verificationCode: generatedVerificationCode,
+          gymId: '',
           firstName: '',
           lastName: '',
           email: '',
