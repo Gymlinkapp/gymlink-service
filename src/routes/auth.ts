@@ -1,8 +1,11 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
 import { Twilio } from 'twilio';
-import { sign } from 'jsonwebtoken';
+import { sign, verify } from 'jsonwebtoken';
+import bcrypt from 'bcrypt';
 import { isUserSignedIn } from '../util/user/helpers';
+import { JWT } from '../types';
+
 const accountSid = process.env.TWILIO_ACCOUNT_SID || '';
 const authToken = process.env.TWILIO_AUTH_TOKEN || '';
 const client = new Twilio(accountSid, authToken);
@@ -36,7 +39,7 @@ authRouter.post('/auth/sendsms', async (req, res) => {
       await client.messages.create({
         body: `Your verification code is ${generatedVerificationCode}`,
         from: process.env.TWILIO_PHONE_NUMBER || '',
-        to: `+1${req.body.phoneNumber}`,
+        to: `+${req.body.phoneNumber}`,
       });
     } catch (error) {
       res.status(500).json({ error });
@@ -44,23 +47,59 @@ authRouter.post('/auth/sendsms', async (req, res) => {
 
     // create user with base phonenumber
     try {
-      const user = await prisma.user.create({
-        data: {
+      // if there is a user with this phone number, update the verification code
+      const user = await prisma.user.findFirst({
+        where: {
           phoneNumber: req.body.phoneNumber,
-          verificationCode: generatedVerificationCode,
-          gymId: '',
-          firstName: '',
-          lastName: '',
-          email: '',
-          age: 0,
         },
       });
-      res.json({ message: 'SMS sent', code: user.verificationCode });
+      if (!user) {
+        const user = await prisma.user.create({
+          data: {
+            phoneNumber: req.body.phoneNumber,
+            verificationCode: generatedVerificationCode,
+            gym: {
+              create: {
+                location: {
+                  create: {
+                    lat: 0,
+                    long: 0,
+                  },
+                },
+                name: '',
+              },
+            },
+            firstName: '',
+            lastName: '',
+            email: '',
+            password: '',
+            age: 0,
+          },
+        });
+        res.json({
+          message: 'SMS sent',
+          code: user.verificationCode,
+          phoneNumber: user.phoneNumber,
+        });
+      }
+      if (user) {
+        const existingUser = await prisma.user.update({
+          where: {
+            id: user.id,
+          },
+          data: {
+            verificationCode: generatedVerificationCode,
+          },
+        });
+        res.status(200).json({
+          message: 'Verification code sent',
+          code: existingUser.verificationCode,
+          phoneNumber: existingUser.phoneNumber,
+        });
+      }
     } catch (error) {
-      res.status(500).json({ error: error });
+      console.log(error);
     }
-  } else {
-    res.status(400).json({ error: 'missing phone number' });
   }
 });
 
@@ -76,16 +115,41 @@ authRouter.post('/auth/verificationcode', async (req, res) => {
       },
     });
     if (user && user.verificationCode === verificationCode) {
-      await prisma.user.update({
-        where: {
-          id: user.id,
-        },
-        data: {
+      if (!user.verified && !user.firstName && !user.lastName) {
+        const updatedUser = await prisma.user.update({
+          where: {
+            id: user.id,
+          },
+          data: {
+            verified: true,
+          },
+        });
+        res.json({
+          message: 'user created',
+          user: updatedUser,
           verified: true,
-        },
-      });
+        });
+      }
+      if (user.verified && user.firstName && user.lastName) {
+        // if the user is verified, and has a first and last name, then they are good to go.
+        const token = sign(
+          { email: user.email },
+          process.env.JWT_SECRET || '',
+          {
+            expiresIn: '1d',
+          }
+        );
+        const signedInUser = await prisma.user.update({
+          where: {
+            id: user.id,
+          },
+          data: {
+            tempJWT: token,
+          },
+        });
+        res.json({ message: 'success', token: signedInUser.tempJWT });
+      }
     }
-    res.json({ message: 'user created', user: user?.phoneNumber });
   } catch (error) {
     res.json({ message: 'error', error: error });
   }
@@ -99,23 +163,32 @@ authRouter.post('/auth/details', async (req, res) => {
       },
     });
     if (user && user.verified) {
-      const userWithDetails = await prisma.user.update({
-        where: {
-          phoneNumber: req.body.phoneNumber,
-        },
-        data: {
-          firstName: req.body.firstName,
-          lastName: req.body.lastName,
-          email: req.body.email,
-          age: req.body.age,
-          tempJWT: sign(
-            { email: req.body.email },
-            process.env.JWT_SECRET || ''
-          ),
-        },
-      });
+      if (user.firstName && user.lastName && user.email && user.password) {
+        res.json({ message: 'User has already filled out details' });
+      } else {
+        const userWithDetails = await prisma.user.update({
+          where: {
+            phoneNumber: req.body.phoneNumber,
+          },
+          data: {
+            firstName: req.body.firstName,
+            lastName: req.body.lastName,
+            email: req.body.email,
+            password: bcrypt.hashSync(req.body.password, 10),
+            age: req.body.age,
+            tempJWT: sign(
+              { email: req.body.email },
+              process.env.JWT_SECRET || ''
+            ),
+          },
+        });
 
-      res.json({ message: 'user updated', user: userWithDetails });
+        res.json({
+          message: 'user updated',
+          user: userWithDetails,
+          token: userWithDetails.tempJWT,
+        });
+      }
     }
   } catch (error) {
     res.json({ message: 'error', error: error });
@@ -125,39 +198,55 @@ authRouter.post('/auth/details', async (req, res) => {
 // sign in
 authRouter.post('/auth/signin', async (req, res) => {
   const email = req.body.email;
-  const user = await prisma.user.update({
+  const user = await prisma.user.findFirst({
+    select: {
+      password: true,
+    },
     where: {
       email: req.body.email,
     },
-    data: {
-      tempJWT: sign({ email: email }, process.env.JWT_SECRET || ''),
-    },
   });
 
-  if (user) {
-    res.json({ message: 'user signed in', user: user.tempJWT });
+  if (user && bcrypt.compareSync(req.body.password, user.password)) {
+    const token = sign({ email }, process.env.JWT_SECRET || '');
+    const userWithToken = await prisma.user.update({
+      where: {
+        email: email,
+      },
+      data: {
+        tempJWT: token,
+      },
+    });
+    res.json({ message: 'user signed in', token: userWithToken.tempJWT });
   } else {
-    res.json({ message: 'error' });
+    res.status(401).json({ message: 'invalid credentials' });
   }
 });
 
 // sign out
 authRouter.post('/auth/signout', async (req, res) => {
-  const user = await prisma.user.findFirst({
-    where: {
-      email: req.body.email,
-    },
-  });
-
-  if (user && (await isUserSignedIn(user.id))) {
-    await prisma.user.update({
+  let { token } = req.body;
+  // console.log(verify(token, process.env.JWT_SECRET || ''));
+  try {
+    token = verify(token, process.env.JWT_SECRET || '') as JWT;
+    const user = await prisma.user.findFirst({
       where: {
-        email: req.body.email,
-      },
-      data: {
-        tempJWT: '',
+        email: token.email,
       },
     });
+    if (user) {
+      const userWithToken = await prisma.user.update({
+        where: {
+          email: token.email,
+        },
+        data: {
+          tempJWT: null,
+        },
+      });
+      res.json({ message: 'user signed out', token: userWithToken.tempJWT });
+    }
+  } catch (error) {
+    res.json({ message: 'error', error: error });
   }
 });
 

@@ -6,7 +6,11 @@ import { readFileSync } from 'fs';
 import { User } from '@prisma/client';
 import { decode } from 'jsonwebtoken';
 import { JWT } from '../types';
-import { isUserSignedIn } from '../util/user/helpers';
+import {
+  isUserSignedIn,
+  findNearUsers,
+  newOrExistingGym,
+} from '../util/user/helpers';
 
 const prisma = new PrismaClient();
 
@@ -18,25 +22,40 @@ const userRouter = express.Router();
  */
 const upload = multer({ dest: 'images' });
 
-/* This is a basic get request to get all users and a specific user. */
-userRouter.get('/users', async (req, res) => {
-  const users = await prisma.user.findMany({
-    take: 10,
-    orderBy: {
-      id: 'desc',
-    },
-  });
-  res.json(users);
+/* 
+  - create an endpoint to get all users.
+  - get the current user 
+  - only show other users who have their gym closest to the current user.
+*/
+userRouter.get('/users/:token', async (req, res) => {
+  // const { token } = req.params;
+  console.log(req.params);
+
+  // const decoded = decode(token) as JWT;
+  // console.log(token);
+  // try {
+  //   const user = await prisma.user.findUnique({
+  //     where: {
+  //       email: decoded.email,
+  //     },
+  //   });
+  //   if (user) {
+  //     // const users = await findNearUsers(user);
+  //     res.status(200).json(user);
+  //   }
+  // } catch (error) {
+  //   console.log(error);
+  // }
 });
 
-userRouter.get('/users/:id', async (req, res) => {
-  const user = await prisma.user.findUnique({
-    where: {
-      id: req.params.id,
-    },
-  });
-  res.json(user);
-});
+// userRouter.get('/users/:id', async (req, res) => {
+//   const user = await prisma.user.findUnique({
+//     where: {
+//       id: req.params.id,
+//     },
+//   });
+//   res.json(user);
+// });
 
 // https://aboutreact.com/file-uploading-in-react-native/
 // https://github.com/supabase/supabase/issues/1257
@@ -80,7 +99,7 @@ userRouter.post(
 );
 
 // edit a user
-userRouter.post('/users/:id/edit', async (req, res) => {
+userRouter.post('/users/:id', async (req, res) => {
   const { id } = req.params;
 
   // find user
@@ -90,6 +109,8 @@ userRouter.post('/users/:id/edit', async (req, res) => {
     },
   });
 
+  newOrExistingGym(user?.gymId as string);
+
   // if the user is signedin
   let decodedEmail: JWT | null = null;
   if (user && (await isUserSignedIn(user.id)) && user.tempJWT) {
@@ -98,17 +119,12 @@ userRouter.post('/users/:id/edit', async (req, res) => {
 
   // if the user is found and the email matches the email in the token
   if (user && decodedEmail && decodedEmail.email === user.email) {
-    const { firstName, lastName, email, age } = req.body;
-
     const updatedUser = await prisma.user.update({
       where: {
         id: id,
       },
       data: {
-        firstName,
-        lastName,
-        email,
-        age,
+        ...(req.body as User),
       },
     });
     res.json({ message: 'user updated', user: updatedUser });
