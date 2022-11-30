@@ -28,24 +28,23 @@ const upload = multer({ dest: 'images' });
   - only show other users who have their gym closest to the current user.
 */
 userRouter.get('/users/:token', async (req, res) => {
-  // const { token } = req.params;
-  console.log(req.params);
+  const { token } = req.params;
 
-  // const decoded = decode(token) as JWT;
-  // console.log(token);
-  // try {
-  //   const user = await prisma.user.findUnique({
-  //     where: {
-  //       email: decoded.email,
-  //     },
-  //   });
-  //   if (user) {
-  //     // const users = await findNearUsers(user);
-  //     res.status(200).json(user);
-  //   }
-  // } catch (error) {
-  //   console.log(error);
-  // }
+  const decoded = decode(token) as JWT;
+  console.log(decoded);
+  try {
+    const user = await prisma.user.findUnique({
+      where: {
+        email: decoded.email,
+      },
+    });
+    if (user) {
+      // const users = await findNearUsers(user);
+      res.status(200).json(user);
+    }
+  } catch (error) {
+    console.log(error);
+  }
 });
 
 // userRouter.get('/users/:id', async (req, res) => {
