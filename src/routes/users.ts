@@ -2,7 +2,7 @@ import express from 'express';
 import { PrismaClient } from '@prisma/client';
 import { supabase } from '..';
 import multer from 'multer';
-import { readFileSync } from 'fs';
+import * as fs from 'fs';
 import { User } from '@prisma/client';
 import { decode } from 'jsonwebtoken';
 import { JWT } from '../types';
@@ -32,18 +32,22 @@ userRouter.get('/users/:token', async (req, res) => {
 
   const decoded = decode(token) as JWT;
   console.log(decoded);
-  try {
-    const user = await prisma.user.findUnique({
-      where: {
-        email: decoded.email,
-      },
-    });
-    if (user) {
-      // const users = await findNearUsers(user);
-      res.status(200).json(user);
+  if (decoded) {
+    try {
+      const user = await prisma.user.findUnique({
+        where: {
+          email: decoded.email,
+        },
+      });
+      if (user) {
+        // const users = await findNearUsers(user);
+        res.status(200).json(user);
+      }
+    } catch (error) {
+      console.log(error);
     }
-  } catch (error) {
-    console.log(error);
+  } else {
+    res.status(401).json({ message: 'Unauthorized' });
   }
 });
 
@@ -60,42 +64,54 @@ userRouter.get('/users/:token', async (req, res) => {
 // https://github.com/supabase/supabase/issues/1257
 
 /* Uploading the image to the storage bucket and then updating the user with the image url. */
-userRouter.post(
-  '/users/:id/images',
-  upload.single('images'),
-  async (req, res) => {
-    const { id } = req.params;
-    const { path } = req.file as Express.Multer.File;
-    const file = readFileSync(path);
-    const bucketPath = `user-${id}-${req.file?.originalname}.png`;
-    const { error } = await supabase.storage
-      .from('user-images/public')
-      .upload(bucketPath, file);
-    if (error) {
-      res.status(500).json({ error });
-    } else {
-      const url = await supabase.storage
-        .from('user-images/public')
-        .getPublicUrl(bucketPath);
+userRouter.post('/users/images', upload.single('image'), async (req, res) => {
+  const { token, image } = req.body;
 
-      // add image (as url) to user
-      const user = (await prisma.user.findFirst({
-        where: {
-          id: id,
-        },
-      })) as User;
-      await prisma.user.update({
-        where: {
-          id: id,
-        },
-        data: {
-          images: user.images.concat(url.data.publicUrl),
-        },
-      });
-      res.json(user);
-    }
+  const decoded = decode(token) as JWT;
+  const user = await prisma.user.findUnique({
+    where: {
+      email: decoded.email,
+    },
+  });
+
+  if (user && user.images.length > 5) {
+    res.status(400).json({ message: 'You can only have 5 images' });
   }
-);
+  // create a buffer from the base64 encoded image.
+  const buffer = Buffer.from(image, 'base64');
+  if (user) {
+    const bucketPath = `user-${user.id}-${Math.random()}`;
+    try {
+      const { data, error } = await supabase.storage
+        .from('user-images/public')
+        .upload(bucketPath, buffer);
+      if (error) {
+        console.log(error);
+      }
+      if (data) {
+        const url = await supabase.storage
+          .from('user-images/public')
+          .getPublicUrl(bucketPath);
+        const updatedUser = await prisma.user.update({
+          where: {
+            id: user.id,
+          },
+          data: {
+            images: [...user.images, url.data.publicUrl],
+          },
+        });
+        return res.status(200).json({ message: 'success' });
+      }
+    } catch (error) {
+      console.log(error);
+
+      res.status(500).json({ message: 'Internal Server Error' });
+    }
+    return res.status(200).json({ message: 'success' });
+  } else {
+    res.status(401).json({ message: 'Unauthorized' });
+  }
+});
 
 // edit a user
 userRouter.post('/users/:id', async (req, res) => {
