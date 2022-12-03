@@ -199,4 +199,18 @@ userRouter.post('/users/:token', async (req, res) => {
     }
   }
 });
+
+// delete a user
+userRouter.delete('/users/:token', async (req, res) => {
+  const { token } = req.params;
+  console.log(token);
+
+  const decoded = decode(token) as JWT;
+  const user = await prisma.user.delete({
+    where: {
+      email: decoded.email,
+    },
+  });
+  res.json(user);
+});
 export default userRouter;
