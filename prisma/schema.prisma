@@ -21,6 +21,8 @@ model User {
   bio         String?
   images      String[]
   tags        String[]
+  longitude   Float?
+  latitude    Float?
 
   // social aspects
   chats              Chat[]

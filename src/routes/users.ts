@@ -6,11 +6,7 @@ import * as fs from 'fs';
 import { User } from '@prisma/client';
 import { decode } from 'jsonwebtoken';
 import { JWT } from '../types';
-import {
-  isUserSignedIn,
-  findNearUsers,
-  newOrExistingGym,
-} from '../util/user/helpers';
+//
 
 const prisma = new PrismaClient();
 
@@ -114,37 +110,93 @@ userRouter.post('/users/images', upload.single('image'), async (req, res) => {
 });
 
 // edit a user
-userRouter.post('/users/:id', async (req, res) => {
-  const { id } = req.params;
+userRouter.post('/users/:token', async (req, res) => {
+  const { token } = req.params;
 
   // find user
   const user = await prisma.user.findFirst({
     where: {
-      id: id,
+      tempJWT: token,
     },
   });
 
-  newOrExistingGym(user?.gymId as string);
+  if (user && req.body.gym) {
+    console.log(req.body);
+    // get gyms and check if the gym exists
+    const gym = await prisma.gym.findFirst({
+      where: {
+        name: req.body.gym.name,
+      },
+    });
+
+    if (gym) {
+      // update the user with the gym
+      const updatedUser = await prisma.user.update({
+        where: {
+          id: user.id,
+        },
+        data: {
+          bio: req.body.bio,
+          longitude: req.body.longitude,
+          latitude: req.body.latitude,
+          gym: {
+            connect: {
+              id: gym.id,
+            },
+          },
+        },
+      });
+      res.status(200).json(updatedUser);
+    } else {
+      // gym doesn't exist so create it
+      const newGym = await prisma.gym.create({
+        data: {
+          name: req.body.gym.name,
+          location: {
+            create: {
+              lat: req.body.gym.latitude,
+              long: req.body.gym.longitude,
+            },
+          },
+        },
+      });
+
+      // update the user with the gym
+      const updatedUser = await prisma.user.update({
+        where: {
+          id: user.id,
+        },
+        data: {
+          bio: req.body.bio,
+          longitude: req.body.longitude,
+          latitude: req.body.latitude,
+          gym: {
+            connect: {
+              id: newGym.id,
+            },
+          },
+        },
+      });
+      res.status(200).json(updatedUser);
+    }
+  }
 
   // if the user is signedin
   let decodedEmail: JWT | null = null;
-  if (user && (await isUserSignedIn(user.id)) && user.tempJWT) {
-    decodedEmail = decode(user.tempJWT) as JWT;
-  }
+  if (user && !req.body.gym) {
+    decodedEmail = decode(token) as JWT;
 
-  // if the user is found and the email matches the email in the token
-  if (user && decodedEmail && decodedEmail.email === user.email) {
-    const updatedUser = await prisma.user.update({
-      where: {
-        id: id,
-      },
-      data: {
-        ...(req.body as User),
-      },
-    });
-    res.json({ message: 'user updated', user: updatedUser });
-  } else {
-    res.json({ message: 'User is not signed in.' });
+    if (decodedEmail) {
+      const updatedUser = await prisma.user.update({
+        where: {
+          email: decodedEmail.email,
+        },
+        data: {
+          ...req.body,
+        },
+      });
+      res.status(200).json(updatedUser);
+    }
   }
 });
 export default userRouter;
