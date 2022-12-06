@@ -1,7 +1,10 @@
 import express from 'express';
 import { Server } from 'socket.io';
+import http from 'http';
 import cors from 'cors';
+
 import { createClient } from '@supabase/supabase-js';
+
 import userRouter from './routes/users';
 import authRouter from './routes/auth';
 
@@ -17,19 +20,27 @@ app.use(cors());
 app.use('/', userRouter);
 app.use('/', authRouter);
 
-const io = new Server(
-  app.listen(process.env.PORT || 3000, () => {
-    console.log('Server is running on http://localhost:3000');
-  })
-);
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST'],
+  },
+});
 
-io.on('connection', function (socket) {
-  console.log('user connected');
-  socket.on('chat message', function (msg) {
-    io.emit('chat message', msg);
-    console.log('message: ' + msg);
+io.on('connection', (socket) => {
+  console.log('a user connected');
+
+  // listen to a chat-messge
+  socket.on('chat-message', (msg) => {
+    socket.broadcast.emit('recieve-message', msg);
   });
-  socket.on('disconnect', function () {
+
+  socket.on('disconnect', () => {
     console.log('user disconnected');
   });
+});
+
+server.listen(process.env.PORT || 3000, () => {
+  console.log('Server started on port 3000');
 });
