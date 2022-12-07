@@ -173,7 +173,7 @@ authRouter.post('/auth/details', async (req, res) => {
           data: {
             firstName: req.body.firstName,
             lastName: req.body.lastName,
-            email: req.body.email,
+            email: req.body.email.toLowerCase(),
             password: bcrypt.hashSync(req.body.password, 10),
             age: req.body.age,
             tempJWT: sign(
