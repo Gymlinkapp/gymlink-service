@@ -29,11 +29,12 @@ const io = new Server(server, {
 });
 
 io.on('connection', (socket) => {
-  console.log('a user connected');
+  console.log('a user connected: ', socket.id);
 
   // listen to a chat-messge
-  socket.on('chat-message', (msg) => {
-    socket.broadcast.emit('recieve-message', msg);
+  socket.on('chat-message', (data) => {
+    console.log('message: ', data);
+    socket.broadcast.emit('recieve-message', data);
   });
 
   socket.on('disconnect', () => {

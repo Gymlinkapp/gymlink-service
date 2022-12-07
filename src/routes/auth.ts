@@ -180,6 +180,7 @@ authRouter.post('/auth/details', async (req, res) => {
               { email: req.body.email },
               process.env.JWT_SECRET || ''
             ),
+            ...req.body,
           },
         });
 
@@ -198,28 +199,29 @@ authRouter.post('/auth/details', async (req, res) => {
 // sign in
 authRouter.post('/auth/signin', async (req, res) => {
   const email = req.body.email;
-  const user = await prisma.user.findFirst({
-    select: {
-      password: true,
-    },
-    where: {
-      email: req.body.email,
-    },
-  });
-
-  if (user && bcrypt.compareSync(req.body.password, user.password)) {
-    const token = sign({ email }, process.env.JWT_SECRET || '');
-    const userWithToken = await prisma.user.update({
+  try {
+    const user = await prisma.user.findFirst({
       where: {
-        email: email,
-      },
-      data: {
-        tempJWT: token,
+        email: req.body.email,
       },
     });
-    res.json({ message: 'user signed in', token: userWithToken.tempJWT });
-  } else {
-    res.status(401).json({ message: 'invalid credentials' });
+
+    if (user && bcrypt.compareSync(req.body.password, user.password)) {
+      const token = sign({ email }, process.env.JWT_SECRET || '');
+      const userWithToken = await prisma.user.update({
+        where: {
+          email: email,
+        },
+        data: {
+          tempJWT: token,
+        },
+      });
+      res.json({ message: 'user signed in', token: userWithToken.tempJWT });
+    } else {
+      res.status(401).json({ message: 'invalid credentials' });
+    }
+  } catch (error) {
+    res.json({ message: 'error', error: error });
   }
 });
 
