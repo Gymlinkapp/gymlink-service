@@ -7,16 +7,18 @@ const chatsRouter = express.Router();
 
 // create chat
 chatsRouter.post('/chats', async (req, res) => {
+  console.log(req.body);
   const { name, userId, people } = req.body;
   const chat = await prisma.chat.create({
     data: {
       name,
-      userId,
+      id: userId,
       participants: {
         connect: [
           {
             id: userId,
           },
+
           ...people.map((person: User) => {
             return {
               id: person.id,
