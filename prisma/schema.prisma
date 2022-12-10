@@ -25,7 +25,7 @@ model User {
   latitude    Float?
 
   // social aspects
-  chats              Chat[]
+  chats              Chat[]          @relation("participants")
   Message            Message[]
   friendRequests     FriendRequest[] @relation("fromUser")
   sentFriendRequests FriendRequest[] @relation("toUser")
@@ -42,6 +42,8 @@ model User {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  chatId    String?
+  Chat      Chat?
 }
 
 model Gym {
@@ -83,11 +85,14 @@ model Friend {
 
 model Chat {
   id        String   @id @default(cuid())
+  name      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  participants User[]
+  participants User[]    @relation("participants")
   messages     Message[]
+  userId       String?   @unique
+  User         User?     @relation(fields: [userId], references: [id])
 }
 
 model Message {
