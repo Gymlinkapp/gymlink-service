@@ -37,7 +37,7 @@ io.on('connection', (socket) => {
 
   socket.on('join-chat', (data: Chat) => {
     console.log('join-chat: ', data);
-    socket.join(data.id);
+    socket.join(data.name);
 
     // would want to save the room as a Chat object in the database
     const chat = prisma.chat.create({
@@ -57,8 +57,29 @@ io.on('connection', (socket) => {
   });
 
   // listen to a chat-messge
-  socket.on('chat-message', (data) => {
+  socket.on('chat-message', async (data) => {
     console.log('message: ', data);
+    // save the message to the chat in the database
+    // socket.to(data.room).emit('recieve-message', data);
+
+    const chat = await prisma.chat.update({
+      where: {
+        id: data.roomId,
+      },
+      data: {
+        messages: {
+          create: {
+            content: data.message,
+            sender: {
+              connect: {
+                id: data.user.id,
+              },
+            },
+          },
+        },
+      },
+    });
+    console.log(chat);
     socket.broadcast.emit('recieve-message', data);
   });
 

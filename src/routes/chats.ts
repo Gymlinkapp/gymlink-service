@@ -47,4 +47,15 @@ chatsRouter.get('/chats/:userId', async (req, res) => {
   res.status(200).json(chats);
 });
 
+// get chat by id
+chatsRouter.get('/chats/:chatId', async (req, res) => {
+  const { chatId } = req.params;
+  const chat = await prisma.chat.findUnique({
+    where: {
+      id: chatId,
+    },
+  });
+  res.status(200).json(chat);
+});
+
 export default chatsRouter;
