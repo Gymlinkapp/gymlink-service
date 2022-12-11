@@ -35,19 +35,30 @@ const io = new Server(server, {
 io.on('connection', (socket) => {
   console.log('a user connected: ', socket.id);
 
-  socket.on('join-chat', (data: Chat) => {
-    console.log('join-chat: ', data);
+  socket.on('join-chat', async (data: any) => {
     socket.join(data.name);
 
-    // would want to save the room as a Chat object in the database
-    const chat = prisma.chat.create({
-      data: {
-        name: data.name,
-        id: data.id,
+    const messages = await prisma.chat.findUnique({
+      where: {
+        id: data.roomId,
+      },
+      select: {
+        messages: {
+          select: {
+            content: true,
+            sender: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+              },
+            },
+          },
+        },
       },
     });
 
-    socket.broadcast.emit('join-chat', data);
+    socket.broadcast.emit('join-chat', messages);
 
     socket.on('leave-chat', (data: Chat) => {
       console.log('leave-chat: ', data);
@@ -69,10 +80,30 @@ io.on('connection', (socket) => {
       data: {
         messages: {
           create: {
-            content: data.message,
+            content: data.content,
             sender: {
               connect: {
-                id: data.user.id,
+                id: data.sender.id,
+              },
+            },
+          },
+        },
+      },
+      select: {
+        messages: {
+          select: {
+            // chat: {
+            //   select: {
+            //     id: true,
+            //     name: true,
+            //   },
+            // },
+            content: true,
+            sender: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
               },
             },
           },
@@ -80,7 +111,7 @@ io.on('connection', (socket) => {
       },
     });
     console.log(chat);
-    socket.broadcast.emit('recieve-message', data);
+    socket.broadcast.emit('recieve-message', chat);
   });
 
   socket.on('disconnect', () => {

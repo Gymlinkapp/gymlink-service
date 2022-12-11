@@ -90,9 +90,9 @@ model Chat {
   updatedAt DateTime @updatedAt
 
   participants User[]    @relation("participants")
-  messages     Message[]
   userId       String?   @unique
-  User         User?     @relation(fields: [userId], references: [id])
+  user         User?     @relation(fields: [userId], references: [id])
+  messages     Message[]
 }
 
 model Message {
@@ -101,10 +101,10 @@ model Message {
   updatedAt DateTime @updatedAt
 
   chatId String
-  chat   Chat   @relation(fields: [chatId], references: [id])
 
   senderId String
   sender   User   @relation(fields: [senderId], references: [id])
 
   content String
+  chat    Chat   @relation(fields: [chatId], references: [id])
 }
