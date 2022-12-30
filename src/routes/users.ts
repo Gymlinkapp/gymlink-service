@@ -6,7 +6,6 @@ import * as fs from 'fs';
 import { User } from '@prisma/client';
 import { decode } from 'jsonwebtoken';
 import { JWT } from '../types';
-//
 
 const prisma = new PrismaClient();
 
@@ -17,6 +16,64 @@ const userRouter = express.Router();
  * stores images locally and sets this as the default path.
  */
 const upload = multer({ dest: 'images' });
+
+// get users closest to the current user in a radius using the user's gym location (long, lat).
+const findNearUsers = async (user: User) => {
+  // get user's current gym
+  const gym = await prisma.gym.findFirst({
+    where: {
+      id: user.gymId,
+    },
+  });
+  // get gym location
+  const gymLocation = await prisma.location.findFirst({
+    where: {
+      id: gym?.locationId,
+    },
+  });
+  const users = await prisma.user.findMany({
+    where: {
+      gym: {
+        location: {
+          lat: {
+            gte: gymLocation?.lat! - 0.5,
+            lte: gymLocation?.lat! + 0.5,
+          },
+          long: {
+            gte: gymLocation?.long! - 0.5,
+            lte: gymLocation?.long! + 0.5,
+          },
+        },
+      },
+    },
+  });
+
+  return users.filter((u) => u.id !== user.id);
+};
+
+userRouter.get('/users/getNearByUsers/:token', async (req, res) => {
+  const { token } = req.params;
+
+  const decoded = decode(token) as JWT;
+  console.log(decoded);
+  if (decoded) {
+    try {
+      const user = await prisma.user.findUnique({
+        where: {
+          email: decoded.email,
+        },
+      });
+      if (user) {
+        const users = await findNearUsers(user);
+        res.status(200).json(users);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  } else {
+    res.status(401).json({ message: 'Unauthorized' });
+  }
+});
 
 /* 
   - create an endpoint to get all users.
@@ -46,15 +103,6 @@ userRouter.get('/users/:token', async (req, res) => {
     res.status(401).json({ message: 'Unauthorized' });
   }
 });
-
-// userRouter.get('/users/:id', async (req, res) => {
-//   const user = await prisma.user.findUnique({
-//     where: {
-//       id: req.params.id,
-//     },
-//   });
-//   res.json(user);
-// });
 
 // https://aboutreact.com/file-uploading-in-react-native/
 // https://github.com/supabase/supabase/issues/1257

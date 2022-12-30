@@ -12,7 +12,6 @@ chatsRouter.post('/chats', async (req, res) => {
   const chat = await prisma.chat.create({
     data: {
       name,
-      userId,
       participants: {
         connect: [
           {
