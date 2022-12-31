@@ -110,8 +110,15 @@ socialRouter.post('/social/declineFriendRequest', async (req, res) => {
 });
 
 // get friend requests for a user
-socialRouter.get('/social/getFriendRequests/:userId', async (req, res) => {
-  const { userId } = req.params;
+socialRouter.get('/social/getFriendRequests/:token', async (req, res) => {
+  const { token } = req.params;
+  const decodedEmail = decode(token) as JWT;
+  const user = await prisma.user.findUnique({
+    where: {
+      email: decodedEmail.email,
+    },
+  });
+  const userId = user?.id;
   const friendRequests = await prisma.friendRequest.findMany({
     where: {
       toUserId: userId,
