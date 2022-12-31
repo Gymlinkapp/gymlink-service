@@ -27,8 +27,8 @@ model User {
   // social aspects
   chats              Chat[]          @relation("participants")
   Message            Message[]
-  friendRequests     FriendRequest[] @relation("fromUser")
-  sentFriendRequests FriendRequest[] @relation("toUser")
+  friendRequests     FriendRequest[] @relation("toUser")
+  sentFriendRequests FriendRequest[] @relation("fromUser")
   friends            Friend[]        @relation("friends")
 
   // user settings

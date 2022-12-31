@@ -62,6 +62,9 @@ userRouter.get('/users/getNearByUsers/:token', async (req, res) => {
         where: {
           email: decoded.email,
         },
+        include: {
+          friendRequests: true,
+        },
       });
       if (user) {
         const users = await findNearUsers(user);
@@ -246,6 +249,16 @@ userRouter.post('/users/:token', async (req, res) => {
       res.status(200).json(updatedUser);
     }
   }
+});
+
+userRouter.get('/users/findById/:userId', async (req, res) => {
+  const { userId } = req.params;
+  const user = await prisma.user.findUnique({
+    where: {
+      id: userId,
+    },
+  });
+  res.json(user);
 });
 
 // delete a user

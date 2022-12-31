@@ -7,8 +7,11 @@ import { createClient } from '@supabase/supabase-js';
 
 import userRouter from './routes/users';
 import authRouter from './routes/auth';
-import { Chat, PrismaClient } from '@prisma/client';
+import { Chat, Location, PrismaClient } from '@prisma/client';
 import chatsRouter from './routes/chats';
+import gymRouter from './routes/gyms';
+import locationRouter from './routes/locations';
+import socialRouter from './routes/social';
 const prisma = new PrismaClient();
 
 export const supabase = createClient(
@@ -23,6 +26,9 @@ app.use(cors());
 app.use('/', userRouter);
 app.use('/', authRouter);
 app.use('/', chatsRouter);
+app.use('/', gymRouter);
+app.use('/', locationRouter);
+app.use('/', socialRouter);
 
 const server = http.createServer(app);
 const io = new Server(server, {
