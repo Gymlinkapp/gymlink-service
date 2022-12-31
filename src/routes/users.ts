@@ -46,9 +46,25 @@ const findNearUsers = async (user: User) => {
         },
       },
     },
+    include: {
+      friends: true,
+    },
   });
 
-  return users.filter((u) => u.id !== user.id);
+  // return users.filter((u) => u.id !== user.id && !user.friends?.some((f) => f.id === u.id));
+  // return if the user is not the current user and the user is not already a friend.
+  // get current user's friends
+  const friends = await prisma.user.findUnique({
+    where: {
+      id: user.id,
+    },
+    include: {
+      friends: true,
+    },
+  });
+  return users.filter(
+    (u) => u.id !== user.id && !friends?.friends?.some((f) => f.id === u.id)
+  );
 };
 
 userRouter.get('/users/getNearByUsers/:token', async (req, res) => {

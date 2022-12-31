@@ -29,7 +29,8 @@ model User {
   Message            Message[]
   friendRequests     FriendRequest[] @relation("toUser")
   sentFriendRequests FriendRequest[] @relation("fromUser")
-  friends            Friend[]        @relation("friends")
+  friends            User[]          @relation("friends")
+  friendsRelation    User[]          @relation("friends")
 
   // user settings
   tempJWT          String?
@@ -76,11 +77,6 @@ model FriendRequest {
   fromUserId String
   toUserId   String
   userId     String?
-}
-
-model Friend {
-  id      String @id @default(cuid())
-  friends User[] @relation("friends")
 }
 
 model Chat {

@@ -1,5 +1,7 @@
 import { PrismaClient, User } from '@prisma/client';
 import express from 'express';
+import { decode } from 'jsonwebtoken';
+import { JWT } from 'src/types';
 
 const prisma = new PrismaClient();
 
@@ -50,7 +52,7 @@ socialRouter.post('/social/acceptFriendRequest', async (req, res) => {
 
     if (fromUser && toUser) {
       // create the friendship by updating user with new friend
-      const friendship = await prisma.user.update({
+      await prisma.user.update({
         where: {
           id: fromUser.id,
         },
@@ -62,12 +64,26 @@ socialRouter.post('/social/acceptFriendRequest', async (req, res) => {
           },
         },
       });
+
+      await prisma.user.update({
+        where: {
+          id: toUser.id,
+        },
+        data: {
+          friends: {
+            connect: {
+              id: fromUser.id,
+            },
+          },
+        },
+      });
       // delete the friend request
       await prisma.friendRequest.delete({
         where: {
           id: friendRequestId,
         },
       });
+
       // get friends of the user
       const friends = await prisma.user.findUnique({
         where: {
@@ -105,6 +121,21 @@ socialRouter.get('/social/getFriendRequests/:userId', async (req, res) => {
     },
   });
   res.json(friendRequests);
+});
+
+// get friends for a user
+socialRouter.get('/social/getFriends/:token', async (req, res) => {
+  const { token } = req.params;
+  const decodedEmail = decode(token) as JWT;
+  const user = await prisma.user.findUnique({
+    where: {
+      email: decodedEmail.email,
+    },
+    include: {
+      friends: true,
+    },
+  });
+  res.json(user?.friends);
 });
 
 export default socialRouter;
