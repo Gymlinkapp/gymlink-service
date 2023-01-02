@@ -53,35 +53,32 @@ authRouter.post('/auth/sendsms', async (req, res) => {
           phoneNumber: req.body.phoneNumber,
         },
       });
+
+      // if there isn't already a user:
       if (!user) {
         const user = await prisma.user.create({
           data: {
             phoneNumber: req.body.phoneNumber,
             verificationCode: generatedVerificationCode,
-            gym: {
-              create: {
-                location: {
-                  create: {
-                    lat: 0,
-                    long: 0,
-                  },
-                },
-                name: '',
-              },
-            },
             firstName: '',
             lastName: '',
             email: '',
             password: '',
             age: 0,
+
+            // update the step of the auth process
+            authSteps: 1,
           },
         });
         res.json({
           message: 'SMS sent',
+          authStep: user.authSteps,
           code: user.verificationCode,
           phoneNumber: user.phoneNumber,
         });
       }
+
+      // if there is already a user:
       if (user) {
         const existingUser = await prisma.user.update({
           where: {
@@ -115,21 +112,26 @@ authRouter.post('/auth/verificationcode', async (req, res) => {
       },
     });
     if (user && user.verificationCode === verificationCode) {
+      // if it is a new user and doesn't have the basic info:
       if (!user.verified && !user.firstName && !user.lastName) {
         const updatedUser = await prisma.user.update({
           where: {
             id: user.id,
           },
           data: {
+            authSteps: 2,
             verified: true,
           },
         });
         res.json({
           message: 'user created',
+          authStep: updatedUser.authSteps,
           user: updatedUser,
           verified: true,
         });
       }
+
+      // if the user is verified already, there are most likely trying to log in.
       if (user.verified && user.firstName && user.lastName) {
         // if the user is verified, and has a first and last name, then they are good to go.
         const token = sign(
@@ -176,16 +178,17 @@ authRouter.post('/auth/details', async (req, res) => {
             email: req.body.email.toLowerCase(),
             password: bcrypt.hashSync(req.body.password, 10),
             age: req.body.age,
+            authSteps: 3,
             tempJWT: sign(
               { email: req.body.email },
               process.env.JWT_SECRET || ''
             ),
-            ...req.body,
           },
         });
 
         res.json({
           message: 'user updated',
+          authStep: userWithDetails.authSteps,
           user: userWithDetails,
           token: userWithDetails.tempJWT,
         });

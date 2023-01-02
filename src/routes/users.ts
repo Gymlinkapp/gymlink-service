@@ -22,6 +22,7 @@ const findNearUsers = async (user: User) => {
   // get user's current gym
   const gym = await prisma.gym.findFirst({
     where: {
+      // @ts-expect-error -- gymId is optional, but a user will always have a gymId.
       id: user.gymId,
     },
   });
@@ -123,9 +124,6 @@ userRouter.get('/users/:token', async (req, res) => {
   }
 });
 
-// https://aboutreact.com/file-uploading-in-react-native/
-// https://github.com/supabase/supabase/issues/1257
-
 /* Uploading the image to the storage bucket and then updating the user with the image url. */
 userRouter.post('/users/images', upload.single('image'), async (req, res) => {
   const { token, image } = req.body;
@@ -160,6 +158,7 @@ userRouter.post('/users/images', upload.single('image'), async (req, res) => {
             id: user.id,
           },
           data: {
+            authSteps: 4,
             images: [...user.images, url.data.publicUrl],
           },
         });
@@ -206,6 +205,7 @@ userRouter.post('/users/:token', async (req, res) => {
           bio: req.body.bio,
           longitude: req.body.longitude,
           latitude: req.body.latitude,
+          authSteps: req.body.authSteps,
           gym: {
             connect: {
               id: gym.id,
@@ -237,6 +237,8 @@ userRouter.post('/users/:token', async (req, res) => {
           bio: req.body.bio,
           longitude: req.body.longitude,
           latitude: req.body.latitude,
+          // if there is a gym in the body, the user has completed the auth step 4, so we update the auth step to 5, if there is tags in the body then we update the auth step to 6.
+          authSteps: req.body.authSteps,
           gym: {
             connect: {
               id: newGym.id,

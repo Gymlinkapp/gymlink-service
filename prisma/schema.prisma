@@ -23,6 +23,7 @@ model User {
   tags        String[]
   longitude   Float?
   latitude    Float?
+  authSteps   Int      @default(0)
 
   // social aspects
   chats              Chat[]          @relation("participants")
@@ -38,8 +39,8 @@ model User {
   verified         Boolean? @default(false)
 
   // gym aspects
-  gym   Gym    @relation(fields: [gymId], references: [id])
-  gymId String
+  gym   Gym?    @relation(fields: [gymId], references: [id])
+  gymId String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
