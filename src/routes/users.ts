@@ -214,6 +214,7 @@ userRouter.post('/users/:token', async (req, res) => {
           },
         },
       });
+      console.log('gym exists, but connected and created user', updatedUser);
       res.status(200).json(updatedUser);
     } else {
       console.log('new gym here');
