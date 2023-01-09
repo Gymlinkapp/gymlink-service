@@ -64,7 +64,14 @@ io.on('connection', (socket) => {
       },
     });
 
-    socket.broadcast.emit('join-chat', messages);
+    if (messages && messages.messages.length > 50) {
+      socket.emit(
+        'join-chat',
+        [...messages.messages].slice(Math.max(messages.messages.length - 50, 0))
+      );
+    } else {
+      socket.emit('join-chat', messages);
+    }
 
     socket.on('leave-chat', (data: Chat) => {
       console.log('leave-chat: ', data);
@@ -105,6 +112,7 @@ io.on('connection', (socket) => {
             //   },
             // },
             content: true,
+            id: true,
             sender: {
               select: {
                 id: true,
@@ -117,7 +125,14 @@ io.on('connection', (socket) => {
       },
     });
     console.log(chat);
-    socket.broadcast.emit('recieve-message', chat);
+    socket.broadcast.emit(
+      'recieve-message',
+      chat.messages[chat.messages.length - 1]
+    );
+
+    // socket
+    //   .to(data.roomId)
+    //   .emit('recieve-message', chat.messages[chat.messages.length - 1]);
   });
 
   socket.on('disconnect', () => {
