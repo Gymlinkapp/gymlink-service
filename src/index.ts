@@ -42,7 +42,7 @@ io.on('connection', (socket) => {
   console.log('a user connected: ', socket.id);
 
   socket.on('join-chat', async (data: any) => {
-    socket.join(data.name);
+    socket.join(data.roomName);
 
     const messages = await prisma.chat.findUnique({
       where: {
@@ -64,28 +64,26 @@ io.on('connection', (socket) => {
       },
     });
 
+    // when a user joins the chat it should emit the latest 50 messages
     if (messages && messages.messages.length > 50) {
+      // TODO: potentially will need to rework this if this causes problems in other rooms?
       socket.emit(
-        'join-chat',
+        'messages',
         [...messages.messages].slice(Math.max(messages.messages.length - 50, 0))
       );
     } else {
-      socket.emit('join-chat', messages);
+      socket.emit('messages', messages?.messages);
     }
 
     socket.on('leave-chat', (data: Chat) => {
       console.log('leave-chat: ', data);
       socket.leave(data.id);
-      socket.broadcast.emit('leave-chat', data);
+      socket.to(data.id).emit('leave-chat', data);
     });
   });
 
   // listen to a chat-messge
   socket.on('chat-message', async (data) => {
-    console.log('message: ', data);
-    // save the message to the chat in the database
-    // socket.to(data.room).emit('recieve-message', data);
-
     const chat = await prisma.chat.update({
       where: {
         id: data.roomId,
@@ -105,12 +103,6 @@ io.on('connection', (socket) => {
       select: {
         messages: {
           select: {
-            // chat: {
-            //   select: {
-            //     id: true,
-            //     name: true,
-            //   },
-            // },
             content: true,
             id: true,
             sender: {
@@ -124,15 +116,18 @@ io.on('connection', (socket) => {
         },
       },
     });
-    console.log(chat);
-    socket.broadcast.emit(
-      'recieve-message',
-      chat.messages[chat.messages.length - 1]
-    );
 
-    // socket
-    //   .to(data.roomId)
-    //   .emit('recieve-message', chat.messages[chat.messages.length - 1]);
+    // gets the last message
+    const message = chat.messages[chat.messages.length - 1];
+    socket.to(data.roomName).emit('recieve-message', message);
+  });
+
+  // add functionality to listen for typing
+  socket.on('typing', (data) => {
+    const { isTyping, roomName }: { isTyping: boolean; roomName: string } =
+      data;
+    console.log('typing: ', data);
+    socket.broadcast.to(roomName).emit('typing', isTyping);
   });
 
   socket.on('disconnect', () => {
