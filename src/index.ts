@@ -51,6 +51,7 @@ io.on('connection', (socket) => {
       select: {
         messages: {
           select: {
+            createdAt: true,
             content: true,
             sender: {
               select: {
@@ -63,13 +64,14 @@ io.on('connection', (socket) => {
         },
       },
     });
-
-    // when a user joins the chat it should emit the latest 50 messages
+    // when a user joins the chat it should emit the latest 50 messages and use the createdDate to show them in newest to latest
     if (messages && messages.messages.length > 50) {
-      // TODO: potentially will need to rework this if this causes problems in other rooms?
+      const sortedMessages = messages.messages.sort(
+        (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
+      );
       socket.emit(
         'messages',
-        [...messages.messages].slice(Math.max(messages.messages.length - 50, 0))
+        [...sortedMessages].slice(Math.max(sortedMessages.length - 50, 0))
       );
     } else {
       socket.emit('messages', messages?.messages);
