@@ -151,6 +151,10 @@ authRouter.post('/auth/verificationcode', async (req, res) => {
         });
         res.json({ message: 'success', token: signedInUser.tempJWT });
       }
+    } else {
+      // code doesn't match and or is incorreclty inputted
+      console.log('wrong');
+      res.status(400).json({ message: 'incorrect code' });
     }
   } catch (error) {
     res.json({ message: 'error', error: error });

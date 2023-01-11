@@ -9,18 +9,20 @@ const generateRandomPhoneNumber = () => {
 
 async function main() {
   const user1 = await prisma.user.upsert({
-    where: { email: 'jennajames@gmail.com' },
+    where: { email: 'jennyjane@gmail.com' },
     update: {},
     create: {
       images: [
         'https://images.unsplash.com/photo-1672344838703-a5fc22950698?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1748&q=80',
         'https://images.unsplash.com/photo-1672329367841-537174916cf1?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=774&q=80',
       ],
-      email: 'jennajames@gmail.com',
-      firstName: 'Jenna',
-      lastName: 'James',
+      email: 'jennyjane@gmail.com',
+      firstName: 'Jenny',
+      lastName: 'Jane',
       password: bcrypt.hashSync('password', 10),
+      bio: 'I love to workout and I am looking for someone to workout with! Fit4Less is my favorite gym and I am looking for someone to go with me!',
       age: 25,
+      authSteps: 6,
       phoneNumber: generateRandomPhoneNumber(),
       verified: true,
       gym: {
@@ -51,6 +53,8 @@ async function main() {
       lastName: 'Janson',
       password: bcrypt.hashSync('password', 10),
       age: 25,
+      authSteps: 6,
+      bio: 'I love to workout and I am looking for someone to workout with! Fit4Less is my favorite gym and I am looking for someone to go with me!',
       phoneNumber: generateRandomPhoneNumber(),
       verified: true,
       gym: {
@@ -84,7 +88,9 @@ async function main() {
       firstName: 'Jerry',
       lastName: 'John',
       password: bcrypt.hashSync('password', 10),
+      bio: 'I love to workout and I am looking for someone to workout with! Fit4Less is my favorite gym and I am looking for someone to go with me!',
       age: 25,
+      authSteps: 6,
       phoneNumber: generateRandomPhoneNumber(),
       verified: true,
       gym: {
@@ -119,6 +125,8 @@ async function main() {
       lastName: 'Lane',
       password: bcrypt.hashSync('password', 10),
       age: 25,
+      authSteps: 6,
+      bio: 'I love to workout and I am looking for someone to workout with! Fit4Less is my favorite gym and I am looking for someone to go with me!',
       phoneNumber: generateRandomPhoneNumber(),
       verified: true,
       gym: {
@@ -149,6 +157,8 @@ async function main() {
       lastName: 'Trate',
       password: bcrypt.hashSync('password', 10),
       age: 25,
+      authSteps: 6,
+      bio: 'I love to workout and I am looking for someone to workout with! Fit4Less is my favorite gym and I am looking for someone to go with me!',
       phoneNumber: generateRandomPhoneNumber(),
       verified: true,
       gym: {
@@ -182,7 +192,9 @@ async function main() {
       firstName: 'Sarry',
       lastName: 'Sash',
       password: bcrypt.hashSync('password', 10),
+      bio: 'I love to workout and I am looking for someone to workout with! Fit4Less is my favorite gym and I am looking for someone to go with me!',
       age: 25,
+      authSteps: 6,
       phoneNumber: generateRandomPhoneNumber(),
       verified: true,
       gym: {
@@ -213,7 +225,9 @@ async function main() {
       firstName: 'Sarry',
       lastName: 'Sash',
       password: bcrypt.hashSync('password', 10),
+      bio: 'I love to workout and I am looking for someone to workout with! Fit4Less is my favorite gym and I am looking for someone to go with me!',
       age: 25,
+      authSteps: 6,
       phoneNumber: generateRandomPhoneNumber(),
       verified: true,
       gym: {
@@ -247,7 +261,9 @@ async function main() {
       firstName: 'Falicity',
       lastName: 'Able',
       password: bcrypt.hashSync('password', 10),
+      bio: 'I love to workout and I am looking for someone to workout with! Fit4Less is my favorite gym and I am looking for someone to go with me!',
       age: 25,
+      authSteps: 6,
       phoneNumber: generateRandomPhoneNumber(),
       verified: true,
       gym: {
@@ -264,7 +280,48 @@ async function main() {
       },
     },
   });
-  console.log({ user1, user2, user3, user4, user5, user6, user7, user8 });
+  const user9 = await prisma.user.upsert({
+    where: { email: 'hemryrane@gmail.com' },
+    update: {},
+    create: {
+      images: [
+        'https://images.unsplash.com/photo-1601288496920-b6154fe3626a?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=774&q=80',
+        'https://images.unsplash.com/photo-1601288848351-48adce9d676a?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=774&q=80',
+        'https://images.unsplash.com/photo-1601289149034-2daad70d0076?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=774&q=80',
+      ],
+      email: 'hemryrane@gmail.com',
+      firstName: 'Hemry',
+      lastName: 'Rane',
+      password: bcrypt.hashSync('password', 10),
+      bio: 'I love to workout and I am looking for someone to workout with! I go to the best gym in Lansing, it is my favorite gym and I am looking for someone to go with me!',
+      age: 25,
+      authSteps: 6,
+      phoneNumber: generateRandomPhoneNumber(),
+      verified: true,
+      gym: {
+        create: {
+          name: 'State of Fitness',
+          location: {
+            create: {
+              lat: 42.73721016408339,
+              long: -84.54561717359337,
+            },
+          },
+        },
+      },
+    },
+  });
+  console.log({
+    user1,
+    user2,
+    user3,
+    user4,
+    user5,
+    user6,
+    user7,
+    user8,
+    user9,
+  });
 }
 
 main()
