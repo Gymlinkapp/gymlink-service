@@ -32,6 +32,7 @@ model User {
   sentFriendRequests FriendRequest[] @relation("fromUser")
   friends            User[]          @relation("friends")
   friendsRelation    User[]          @relation("friends")
+  streak             Int             @default(0)
 
   // user settings
   tempJWT          String?
@@ -42,10 +43,13 @@ model User {
   gym   Gym?    @relation(fields: [gymId], references: [id])
   gymId String?
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  chatId    String?
-  Chat      Chat?
+  schedule Schedule? @relation(fields: [scheduleId], references: [id])
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  chatId     String?
+  Chat       Chat?
+  scheduleId String?
 }
 
 model Gym {
@@ -78,6 +82,19 @@ model FriendRequest {
   fromUserId String
   toUserId   String
   userId     String?
+}
+
+// the schedule will have each day of the week as an array of strings
+model Schedule {
+  id        String   @id @default(cuid())
+  monday    String[]
+  tuesday   String[]
+  wednesday String[]
+  thursday  String[]
+  friday    String[]
+  saturday  String[]
+  sunday    String[]
+  User      User[]
 }
 
 model Chat {
