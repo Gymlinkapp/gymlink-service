@@ -1,11 +1,11 @@
-import express from "express";
-import { PrismaClient } from "@prisma/client";
-import { supabase } from "..";
-import multer from "multer";
-import * as fs from "fs";
-import { User } from "@prisma/client";
-import { decode } from "jsonwebtoken";
-import { JWT } from "../types";
+import express from 'express';
+import { PrismaClient } from '@prisma/client';
+import { supabase } from '..';
+import multer from 'multer';
+import * as fs from 'fs';
+import { User } from '@prisma/client';
+import { decode } from 'jsonwebtoken';
+import { JWT } from '../types';
 
 const prisma = new PrismaClient();
 
@@ -15,7 +15,7 @@ const userRouter = express.Router();
  * hopefully this doesn't become an issue.
  * stores images locally and sets this as the default path.
  */
-const upload = multer({ dest: "images" });
+const upload = multer({ dest: 'images' });
 
 // get users closest to the current user in a radius using the user's gym location (long, lat).
 const findNearUsers = async (user: User) => {
@@ -68,7 +68,7 @@ const findNearUsers = async (user: User) => {
   );
 };
 
-userRouter.get("/users/getNearByUsers/:token", async (req, res) => {
+userRouter.get('/users/getNearByUsers/:token', async (req, res) => {
   const { token } = req.params;
 
   const decoded = decode(token) as JWT;
@@ -91,7 +91,7 @@ userRouter.get("/users/getNearByUsers/:token", async (req, res) => {
       console.log(error);
     }
   } else {
-    res.status(401).json({ message: "Unauthorized" });
+    res.status(401).json({ message: 'Unauthorized' });
   }
 });
 
@@ -100,7 +100,7 @@ userRouter.get("/users/getNearByUsers/:token", async (req, res) => {
   - get the current user 
   - only show other users who have their gym closest to the current user.
 */
-userRouter.get("/users/:token", async (req, res) => {
+userRouter.get('/users/:token', async (req, res) => {
   const { token } = req.params;
 
   const decoded = decode(token) as JWT;
@@ -120,12 +120,12 @@ userRouter.get("/users/:token", async (req, res) => {
       console.log(error);
     }
   } else {
-    res.status(401).json({ message: "Unauthorized" });
+    res.status(401).json({ message: 'Unauthorized' });
   }
 });
 
 /* Uploading the image to the storage bucket and then updating the user with the image url. */
-userRouter.post("/users/images", upload.single("image"), async (req, res) => {
+userRouter.post('/users/images', upload.single('image'), async (req, res) => {
   const { token, image } = req.body;
 
   const decoded = decode(token) as JWT;
@@ -136,22 +136,22 @@ userRouter.post("/users/images", upload.single("image"), async (req, res) => {
   });
 
   if (user && user.images.length > 5) {
-    res.status(400).json({ message: "You can only have 5 images" });
+    res.status(400).json({ message: 'You can only have 5 images' });
   }
   // create a buffer from the base64 encoded image.
-  const buffer = Buffer.from(image, "base64");
+  const buffer = Buffer.from(image, 'base64');
   if (user) {
     const bucketPath = `user-${user.id}-${Math.random()}`;
     try {
       const { data, error } = await supabase.storage
-        .from("user-images/public")
+        .from('user-images/public')
         .upload(bucketPath, buffer);
       if (error) {
         console.log(error);
       }
       if (data) {
         const url = await supabase.storage
-          .from("user-images/public")
+          .from('user-images/public')
           .getPublicUrl(bucketPath);
         const updatedUser = await prisma.user.update({
           where: {
@@ -162,23 +162,23 @@ userRouter.post("/users/images", upload.single("image"), async (req, res) => {
             images: [...user.images, url.data.publicUrl],
           },
         });
-        return res.status(200).json({ message: "success" });
+        return res.status(200).json({ message: 'success' });
       }
     } catch (error) {
       console.log(error);
 
-      res.status(500).json({ message: "Internal Server Error" });
+      res.status(500).json({ message: 'Internal Server Error' });
     }
-    return res.status(200).json({ message: "success" });
+    return res.status(200).json({ message: 'success' });
   } else {
-    res.status(401).json({ message: "Unauthorized" });
+    res.status(401).json({ message: 'Unauthorized' });
   }
 });
 
 // edit a user
-userRouter.put("/users/:token", async (req, res) => {
+userRouter.put('/users/:token', async (req, res) => {
   const { token } = req.params;
-  console.log("before anything", req.body);
+  console.log('before anything', req.body);
 
   // find user
   const decoded = decode(token) as JWT;
@@ -188,7 +188,7 @@ userRouter.put("/users/:token", async (req, res) => {
     },
   });
   if (user && req.body.gym) {
-    console.log("user", user);
+    console.log('user', user);
     // get gyms and check if the gym exists
     const gym = await prisma.gym.findFirst({
       where: {
@@ -206,7 +206,7 @@ userRouter.put("/users/:token", async (req, res) => {
           bio: req.body.bio,
           longitude: req.body.longitude,
           latitude: req.body.latitude,
-          authSteps: req.body.authSteps,
+          authSteps: req.body.authSteps, // 4
           gym: {
             connect: {
               id: gym.id,
@@ -214,10 +214,10 @@ userRouter.put("/users/:token", async (req, res) => {
           },
         },
       });
-      console.log("gym exists, but connected and created user", updatedUser);
+      console.log('gym exists, but connected and created user', updatedUser);
       res.status(200).json(updatedUser);
     } else {
-      console.log("new gym here");
+      console.log('new gym here');
       // gym doesn't exist so create it
       const newGym = await prisma.gym.create({
         data: {
@@ -240,7 +240,6 @@ userRouter.put("/users/:token", async (req, res) => {
           bio: req.body.bio,
           longitude: req.body.longitude,
           latitude: req.body.latitude,
-          // if there is a gym in the body, the user has completed the auth step 4, so we update the auth step to 5, if there is tags in the body then we update the auth step to 6.
           authSteps: req.body.authSteps,
           gym: {
             connect: {
@@ -249,7 +248,7 @@ userRouter.put("/users/:token", async (req, res) => {
           },
         },
       });
-      console.log("done", updatedUser);
+      console.log('done', updatedUser);
       res.status(200).json(updatedUser);
     }
   }
@@ -274,7 +273,7 @@ userRouter.put("/users/:token", async (req, res) => {
 });
 
 // create a split for a user
-userRouter.post("/users/split", async (req, res) => {
+userRouter.post('/users/split', async (req, res) => {
   const { token, split } = req.body;
   const decoded = decode(token) as JWT;
   const user = await prisma.user.findUnique({
@@ -288,21 +287,27 @@ userRouter.post("/users/split", async (req, res) => {
         id: user.id,
       },
       data: {
+        authSteps: req.body.authSteps,
         split: {
           create: {
-            ...split,
-          }
-        }
+            monday: split[0].exercises,
+            tuesday: split[1].exercises,
+            wednesday: split[2].exercises,
+            thursday: split[3].exercises,
+            friday: split[4].exercises,
+            saturday: split[5].exercises,
+            sunday: split[6].exercises,
+          },
+        },
       },
     });
     res.status(200).json(updatedUser);
-  }
-  else {
-    res.status(401).json({ message: "Unauthorized" });
+  } else {
+    res.status(401).json({ message: 'Unauthorized' });
   }
 });
 
-userRouter.get("/users/findById/:userId", async (req, res) => {
+userRouter.get('/users/findById/:userId', async (req, res) => {
   const { userId } = req.params;
   const user = await prisma.user.findUnique({
     where: {
@@ -313,7 +318,7 @@ userRouter.get("/users/findById/:userId", async (req, res) => {
 });
 
 // delete a user
-userRouter.delete("/users/:token", async (req, res) => {
+userRouter.delete('/users/:token', async (req, res) => {
   const { token } = req.params;
   console.log(token);
 

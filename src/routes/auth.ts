@@ -183,6 +183,7 @@ authRouter.post('/auth/details', async (req, res) => {
             // password: bcrypt.hashSync(req.body.password, 10),
             age: req.body.age,
             authSteps: 3,
+            bio: req.body.bio,
             tempJWT: sign(
               { email: req.body.email },
               process.env.JWT_SECRET || ''
