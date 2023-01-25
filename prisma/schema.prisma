@@ -43,13 +43,13 @@ model User {
   gym   Gym?    @relation(fields: [gymId], references: [id])
   gymId String?
 
-  schedule Schedule? @relation(fields: [scheduleId], references: [id])
+  split Split? @relation(fields: [splitId], references: [id])
 
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   chatId     String?
   Chat       Chat?
-  scheduleId String?
+  splitId String?
 }
 
 model Gym {
@@ -85,7 +85,7 @@ model FriendRequest {
 }
 
 // the schedule will have each day of the week as an array of strings
-model Schedule {
+model Split {
   id        String   @id @default(cuid())
   monday    String[]
   tuesday   String[]
