@@ -13,20 +13,6 @@ const prisma = new PrismaClient();
 
 const authRouter = express.Router();
 
-/* 
-* the prefered flow on most apps is to sign up via phone number.
-
-1. user enters phone number
-  - which will create a user
-  - send a verification code to the phone number
-2. user receives a verification code via sms
-3. user enters verification code
-  - which will verify the user
-4. redirect to fill out profile
-  - which will update that user
-
-*/
-
 const randomVerificationCode = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
 };
@@ -34,10 +20,11 @@ const randomVerificationCode = () => {
 authRouter.post('/auth/sendsms', async (req, res) => {
   const generatedVerificationCode = randomVerificationCode();
   if (req.body.phoneNumber) {
+
     // send sms
     try {
       await client.messages.create({
-        body: `Your verification code is ${generatedVerificationCode}`,
+        body: `Gymlink - Your verification code is ${generatedVerificationCode}`,
         from: process.env.TWILIO_PHONE_NUMBER || '',
         to: `+${req.body.phoneNumber}`,
       });
@@ -46,8 +33,9 @@ authRouter.post('/auth/sendsms', async (req, res) => {
     }
 
     // create user with base phonenumber
+    // phonenumbers are unique and can be used to identify users
     try {
-      // if there is a user with this phone number, update the verification code
+      // check if the user exists with the given phonenumber
       const user = await prisma.user.findFirst({
         where: {
           phoneNumber: req.body.phoneNumber,

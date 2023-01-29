@@ -112,7 +112,7 @@ userRouter.get('/users/:token', async (req, res) => {
         },
         include: {
           split: true,
-        }
+        },
       });
       if (user) {
         // const users = await findNearUsers(user);
@@ -178,8 +178,8 @@ userRouter.post('/users/images', upload.single('image'), async (req, res) => {
 });
 
 // edit a user
-userRouter.put('/users/:token', async (req, res) => {
-  const { token } = req.params;
+userRouter.put('/users', async (req, res) => {
+  const { token } = req.body;
   console.log('before anything', req.body);
 
   // find user
@@ -298,12 +298,43 @@ userRouter.post('/users/split', async (req, res) => {
         friday: split[4].exercises,
         saturday: split[5].exercises,
         sunday: split[6].exercises,
-      }
+      },
     });
     res.status(200).json(newSplit);
   } else {
     res.status(401).json({ message: 'Unauthorized' });
   }
+});
+
+// edit a split
+userRouter.put('/users/split', async (req, res) => {
+  console.log(req.body);
+  // const { token, split } = req.body;
+  // const decoded = decode(token) as JWT;
+  // const user = await prisma.user.findUnique({
+  //   where: {
+  //     email: decoded.email,
+  //   },
+  // });
+  // if (user) {
+  //   const updatedSplit = await prisma.split.update({
+  //     where: {
+  //       id: user.splitId as string,
+  //     },
+  //     data: {
+  //       monday: split[0].exercises,
+  //       tuesday: split[1].exercises,
+  //       wednesday: split[2].exercises,
+  //       thursday: split[3].exercises,
+  //       friday: split[4].exercises,
+  //       saturday: split[5].exercises,
+  //       sunday: split[6].exercises,
+  //     },
+  //   });
+  //   res.status(200).json(updatedSplit);
+  // } else {
+  //   res.status(401).json({ message: 'Unauthorized' });
+  // }
 });
 
 userRouter.get('/users/findById/:userId', async (req, res) => {
