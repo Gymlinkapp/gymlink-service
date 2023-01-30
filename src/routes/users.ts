@@ -255,22 +255,31 @@ userRouter.put('/users', async (req, res) => {
     }
   }
 
+  if (user && req.body.tags) {
+    const updatedUser = await prisma.user.update({
+      where: {
+        id: user.id,
+      },
+      data: {
+        tags: req.body.tags,
+        authSteps: req.body.authSteps,
+      },
+    });
+    res.status(200).json(updatedUser);
+  }
+
   // if the user is signedin
   // let decodedEmail: JWT | null = null;
-  if (user && !req.body.gym) {
-    // decodedEmail = decode(token) as JWT;
-
-    if (decoded) {
-      const updatedUser = await prisma.user.update({
-        where: {
-          email: decoded.email,
-        },
-        data: {
-          ...req.body,
-        },
-      });
-      res.status(200).json(updatedUser);
-    }
+  if (user && !req.body.gym && !req.body.tags) {
+    const updatedUser = await prisma.user.update({
+      where: {
+        email: decoded.email,
+      },
+      data: {
+        ...req.body,
+      },
+    });
+    res.status(200).json(updatedUser);
   }
 });
 
@@ -309,32 +318,32 @@ userRouter.post('/users/split', async (req, res) => {
 // edit a split
 userRouter.put('/users/split', async (req, res) => {
   console.log(req.body);
-  // const { token, split } = req.body;
-  // const decoded = decode(token) as JWT;
-  // const user = await prisma.user.findUnique({
-  //   where: {
-  //     email: decoded.email,
-  //   },
-  // });
-  // if (user) {
-  //   const updatedSplit = await prisma.split.update({
-  //     where: {
-  //       id: user.splitId as string,
-  //     },
-  //     data: {
-  //       monday: split[0].exercises,
-  //       tuesday: split[1].exercises,
-  //       wednesday: split[2].exercises,
-  //       thursday: split[3].exercises,
-  //       friday: split[4].exercises,
-  //       saturday: split[5].exercises,
-  //       sunday: split[6].exercises,
-  //     },
-  //   });
-  //   res.status(200).json(updatedSplit);
-  // } else {
-  //   res.status(401).json({ message: 'Unauthorized' });
-  // }
+  const { token, split } = req.body;
+  const decoded = decode(token) as JWT;
+  const user = await prisma.user.findUnique({
+    where: {
+      email: decoded.email,
+    },
+  });
+  if (user) {
+    const updatedSplit = await prisma.split.update({
+      where: {
+        id: user.splitId as string,
+      },
+      data: {
+        monday: split[0].exercises,
+        tuesday: split[1].exercises,
+        wednesday: split[2].exercises,
+        thursday: split[3].exercises,
+        friday: split[4].exercises,
+        saturday: split[5].exercises,
+        sunday: split[6].exercises,
+      },
+    });
+    res.status(200).json(updatedSplit);
+  } else {
+    res.status(401).json({ message: 'Unauthorized' });
+  }
 });
 
 userRouter.get('/users/findById/:userId', async (req, res) => {
