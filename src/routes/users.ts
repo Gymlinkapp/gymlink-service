@@ -83,6 +83,7 @@ userRouter.get('/users/getNearByUsers/:token', async (req, res) => {
           friendRequests: true,
         },
       });
+      // const users = await prisma.user.findMany({});
       if (user) {
         const users = await findNearUsers(user);
         res.status(200).json(users);
@@ -95,12 +96,7 @@ userRouter.get('/users/getNearByUsers/:token', async (req, res) => {
   }
 });
 
-/* 
-  - create an endpoint to get all users.
-  - get the current user 
-  - only show other users who have their gym closest to the current user.
-*/
-userRouter.get('/users/:token', async (req, res) => {
+userRouter.get('/users/getByToken/:token', async (req, res) => {
   const { token } = req.params;
 
   const decoded = decode(token) as JWT;
@@ -293,6 +289,12 @@ userRouter.post('/users/split', async (req, res) => {
     },
   });
   if (user) {
+    if (split.length < 1) {
+      return res.status(400).json({
+        message:
+          "Empty exercises. You must fill each day, it's okay to take rest days!",
+      });
+    }
     const newSplit = await prisma.split.create({
       data: {
         User: {
@@ -300,13 +302,13 @@ userRouter.post('/users/split', async (req, res) => {
             id: user.id,
           },
         },
-        monday: split[0].exercises,
-        tuesday: split[1].exercises,
-        wednesday: split[2].exercises,
-        thursday: split[3].exercises,
-        friday: split[4].exercises,
-        saturday: split[5].exercises,
-        sunday: split[6].exercises,
+        monday: split[0]?.exercises || [],
+        tuesday: split[1]?.exercises || [],
+        wednesday: split[2]?.exercises || [],
+        thursday: split[3]?.exercises || [],
+        friday: split[4]?.exercises || [],
+        saturday: split[5]?.exercises || [],
+        sunday: split[6]?.exercises || [],
       },
     });
     res.status(200).json(newSplit);
@@ -326,18 +328,24 @@ userRouter.put('/users/split', async (req, res) => {
     },
   });
   if (user) {
+    if (split.length < 1) {
+      return res.status(400).json({
+        message:
+          "Empty exercises. You must fill each day, it's okay to take rest days!",
+      });
+    }
     const updatedSplit = await prisma.split.update({
       where: {
         id: user.splitId as string,
       },
       data: {
-        monday: split[0].exercises,
-        tuesday: split[1].exercises,
-        wednesday: split[2].exercises,
-        thursday: split[3].exercises,
-        friday: split[4].exercises,
-        saturday: split[5].exercises,
-        sunday: split[6].exercises,
+        monday: split[0]?.exercises || [],
+        tuesday: split[1]?.exercises || [],
+        wednesday: split[2]?.exercises || [],
+        thursday: split[3]?.exercises || [],
+        friday: split[4]?.exercises || [],
+        saturday: split[5]?.exercises || [],
+        sunday: split[6]?.exercises || [],
       },
     });
     res.status(200).json(updatedSplit);
