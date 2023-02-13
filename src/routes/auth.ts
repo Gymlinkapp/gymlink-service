@@ -20,7 +20,6 @@ const randomVerificationCode = () => {
 authRouter.post('/auth/sendsms', async (req, res) => {
   const generatedVerificationCode = randomVerificationCode();
   if (req.body.phoneNumber) {
-
     // send sms
     try {
       await client.messages.create({
@@ -170,7 +169,7 @@ authRouter.post('/auth/details', async (req, res) => {
             email: req.body.email.toLowerCase(),
             // password: bcrypt.hashSync(req.body.password, 10),
             age: req.body.age,
-            authSteps: 3,
+            authSteps: req.body.authSteps,
             bio: req.body.bio,
             tempJWT: sign(
               { email: req.body.email },

@@ -185,7 +185,47 @@ userRouter.put('/users', async (req, res) => {
       email: decoded.email,
     },
   });
-  if (user && req.body.gym) {
+
+  if (user && req.body.tags) {
+    const updatedUser = await prisma.user.update({
+      where: {
+        id: user.id,
+      },
+      data: {
+        tags: req.body.tags,
+        authSteps: req.body.authSteps,
+      },
+    });
+    res.status(200).json(updatedUser);
+  }
+
+  // if the user is signedin
+  // let decodedEmail: JWT | null = null;
+  if (user && !req.body.gym && !req.body.tags) {
+    const updatedUser = await prisma.user.update({
+      where: {
+        email: decoded.email,
+      },
+      data: {
+        ...req.body,
+      },
+    });
+    res.status(200).json(updatedUser);
+  }
+});
+
+userRouter.post('/users/addGym', async (req, res) => {
+  const { token } = req.body;
+  console.log('before anything', req.body);
+
+  // find user
+  const decoded = decode(token) as JWT;
+  const user = await prisma.user.findFirst({
+    where: {
+      email: decoded.email,
+    },
+  });
+  if (user) {
     console.log('user', user);
     // get gyms and check if the gym exists
     const gym = await prisma.gym.findFirst({
@@ -246,36 +286,9 @@ userRouter.put('/users', async (req, res) => {
           },
         },
       });
-      console.log('done', updatedUser);
-      res.status(200).json(updatedUser);
     }
-  }
-
-  if (user && req.body.tags) {
-    const updatedUser = await prisma.user.update({
-      where: {
-        id: user.id,
-      },
-      data: {
-        tags: req.body.tags,
-        authSteps: req.body.authSteps,
-      },
-    });
-    res.status(200).json(updatedUser);
-  }
-
-  // if the user is signedin
-  // let decodedEmail: JWT | null = null;
-  if (user && !req.body.gym && !req.body.tags) {
-    const updatedUser = await prisma.user.update({
-      where: {
-        email: decoded.email,
-      },
-      data: {
-        ...req.body,
-      },
-    });
-    res.status(200).json(updatedUser);
+  } else {
+    res.status(401).json({ message: 'Unauthorized' });
   }
 });
 
