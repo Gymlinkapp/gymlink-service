@@ -216,78 +216,85 @@ userRouter.put('/users', async (req, res) => {
 
 userRouter.post('/users/addGym', async (req, res) => {
   const { token } = req.body;
-  console.log('before anything', req.body);
 
   // find user
   const decoded = decode(token) as JWT;
-  const user = await prisma.user.findFirst({
-    where: {
-      email: decoded.email,
-    },
-  });
-  if (user) {
-    console.log('user', user);
-    // get gyms and check if the gym exists
-    const gym = await prisma.gym.findFirst({
+  try {
+    const user = await prisma.user.findFirst({
       where: {
-        name: req.body.gym.name,
+        email: decoded.email,
       },
     });
 
-    if (gym) {
-      // update the user with the gym
-      const updatedUser = await prisma.user.update({
+    // if there is a user:
+    if (user) {
+      // get gyms and check if the gym exists
+      const gym = await prisma.gym.findFirst({
         where: {
-          id: user.id,
-        },
-        data: {
-          bio: req.body.bio,
-          longitude: req.body.longitude,
-          latitude: req.body.latitude,
-          authSteps: req.body.authSteps, // 4
-          gym: {
-            connect: {
-              id: gym.id,
-            },
-          },
-        },
-      });
-      console.log('gym exists, but connected and created user', updatedUser);
-      res.status(200).json(updatedUser);
-    } else {
-      console.log('new gym here');
-      // gym doesn't exist so create it
-      const newGym = await prisma.gym.create({
-        data: {
           name: req.body.gym.name,
-          location: {
-            create: {
-              lat: req.body.gym.latitude,
-              long: req.body.gym.longitude,
-            },
-          },
         },
       });
 
-      // update the user with the gym
-      const updatedUser = await prisma.user.update({
-        where: {
-          id: user.id,
-        },
-        data: {
-          bio: req.body.bio,
-          longitude: req.body.longitude,
-          latitude: req.body.latitude,
-          authSteps: req.body.authSteps,
-          gym: {
-            connect: {
-              id: newGym.id,
+      if (gym) {
+        // update the user with the gym
+        const updatedUser = await prisma.user.update({
+          where: {
+            id: user.id,
+          },
+          data: {
+            bio: req.body.bio,
+            longitude: req.body.longitude,
+            latitude: req.body.latitude,
+            authSteps: req.body.authSteps, // 4
+            gym: {
+              connect: {
+                id: gym.id,
+              },
             },
           },
-        },
-      });
+        });
+        console.log('gym exists, but connected and created user', updatedUser);
+        res.status(200).json(updatedUser);
+      } else {
+        console.log('new gym here');
+        // gym doesn't exist so create it
+        const newGym = await prisma.gym.create({
+          data: {
+            name: req.body.gym.name,
+            location: {
+              create: {
+                lat: req.body.gym.latitude,
+                long: req.body.gym.longitude,
+              },
+            },
+          },
+        });
+
+        // update the user with the newly created gym
+        const updatedUser = await prisma.user.update({
+          where: {
+            id: user.id,
+          },
+          data: {
+            bio: req.body.bio,
+            longitude: req.body.longitude,
+            latitude: req.body.latitude,
+            authSteps: req.body.authSteps,
+            gym: {
+              connect: {
+                id: newGym.id,
+              },
+            },
+          },
+        });
+
+        // new gym with user should work so return the newly updated user with the new gym.
+        res.status(200).json(updatedUser);
+      }
+    } else {
+      res.status(401).json({ message: 'Unauthorized' });
     }
-  } else {
+  } catch {
     res.status(401).json({ message: 'Unauthorized' });
   }
 });
