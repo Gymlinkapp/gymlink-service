@@ -6,6 +6,7 @@ import * as fs from 'fs';
 import { User } from '@prisma/client';
 import { decode } from 'jsonwebtoken';
 import { JWT } from '../types';
+import { deleteUser } from '../controllers/users';
 
 const prisma = new PrismaClient();
 
@@ -52,9 +53,7 @@ const findNearUsers = async (user: User) => {
     },
   });
 
-  // return users.filter((u) => u.id !== user.id && !user.friends?.some((f) => f.id === u.id));
-  // return if the user is not the current user and the user is not already a friend.
-  // get current user's friends
+  // get user's friends
   const friends = await prisma.user.findUnique({
     where: {
       id: user.id,
@@ -72,7 +71,6 @@ userRouter.get('/users/getNearByUsers/:token', async (req, res) => {
   const { token } = req.params;
 
   const decoded = decode(token) as JWT;
-  console.log(decoded);
   if (decoded) {
     try {
       const user = await prisma.user.findUnique({
@@ -111,7 +109,6 @@ userRouter.get('/users/getByToken/:token', async (req, res) => {
         },
       });
       if (user) {
-        // const users = await findNearUsers(user);
         res.status(200).json(user);
       }
     } catch (error) {
@@ -136,6 +133,7 @@ userRouter.post('/users/images', upload.single('image'), async (req, res) => {
   if (user && user.images.length > 5) {
     res.status(400).json({ message: 'You can only have 5 images' });
   }
+
   // create a buffer from the base64 encoded image.
   const buffer = Buffer.from(image, 'base64');
   if (user) {
@@ -148,7 +146,7 @@ userRouter.post('/users/images', upload.single('image'), async (req, res) => {
         console.log(error);
       }
       if (data) {
-        const url = await supabase.storage
+        const url = supabase.storage
           .from('user-images/public')
           .getPublicUrl(bucketPath);
         const updatedUser = await prisma.user.update({
@@ -160,7 +158,7 @@ userRouter.post('/users/images', upload.single('image'), async (req, res) => {
             images: [...user.images, url.data.publicUrl],
           },
         });
-        return res.status(200).json({ message: 'success' });
+        return res.status(200).json({ message: 'success', user: updatedUser });
       }
     } catch (error) {
       console.log(error);
@@ -200,7 +198,6 @@ userRouter.put('/users', async (req, res) => {
   }
 
   // if the user is signedin
-  // let decodedEmail: JWT | null = null;
   if (user && !req.body.gym && !req.body.tags) {
     const updatedUser = await prisma.user.update({
       where: {
@@ -253,10 +250,8 @@ userRouter.post('/users/addGym', async (req, res) => {
             },
           },
         });
-        console.log('gym exists, but connected and created user', updatedUser);
         res.status(200).json(updatedUser);
       } else {
-        console.log('new gym here');
         // gym doesn't exist so create it
         const newGym = await prisma.gym.create({
           data: {
@@ -292,7 +287,7 @@ userRouter.post('/users/addGym', async (req, res) => {
         res.status(200).json(updatedUser);
       }
     } else {
-      res.status(401).json({ message: 'Unauthorized' });
+      res.status(401).json({ message: 'Unable to join gym' });
     }
   } catch {
     res.status(401).json({ message: 'Unauthorized' });
@@ -322,6 +317,7 @@ userRouter.post('/users/split', async (req, res) => {
             id: user.id,
           },
         },
+        // handle empty days on frontend by not allowing user to submit
         monday: split[0]?.exercises || [],
         tuesday: split[1]?.exercises || [],
         wednesday: split[2]?.exercises || [],
@@ -359,6 +355,7 @@ userRouter.put('/users/split', async (req, res) => {
         id: user.splitId as string,
       },
       data: {
+        // handle empty days on frontend by not allowing user to submit
         monday: split[0]?.exercises || [],
         tuesday: split[1]?.exercises || [],
         wednesday: split[2]?.exercises || [],
@@ -376,25 +373,22 @@ userRouter.put('/users/split', async (req, res) => {
 
 userRouter.get('/users/findById/:userId', async (req, res) => {
   const { userId } = req.params;
-  const user = await prisma.user.findUnique({
-    where: {
-      id: userId,
-    },
-  });
-  res.json(user);
+  try {
+    const user = await prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+    });
+    res.json(user);
+  } catch (error) {
+    console.log(error);
+  }
 });
 
 // delete a user
 userRouter.delete('/users/:token', async (req, res) => {
-  const { token } = req.params;
-  console.log(token);
-
-  const decoded = decode(token) as JWT;
-  const user = await prisma.user.delete({
-    where: {
-      email: decoded.email,
-    },
-  });
-  res.json(user);
+  try {
+    deleteUser({ req, res });
+  } catch (error) {}
 });
 export default userRouter;
