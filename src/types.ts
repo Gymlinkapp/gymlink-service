@@ -7,7 +7,7 @@ export type JWT = {
 
 export type Params = {
   req: Request<{
-    token: string;
+    [key: string]: string;
   }>;
   res: Response;
 };
