@@ -47,7 +47,6 @@ export const getUserByToken = async ({ req, res }: Params) => {
           chats: {
             include: {
               participants: true,
-              messages: true,
               user: true,
             },
           },
@@ -153,16 +152,7 @@ export const createSplit = async ({ req, res }: Params) => {
         sunday: split[6]?.exercises || [],
       },
     });
-
-    const updatedUser = await prisma.user.update({
-      where: {
-        id: user.id,
-      },
-      data: {
-        authSteps: req.body.authSteps,
-      },
-    });
-    res.status(200).json(updatedUser);
+    res.status(200).json(newSplit);
   } else {
     res.status(401).json({ message: 'Unauthorized' });
   }
