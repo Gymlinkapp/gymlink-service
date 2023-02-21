@@ -152,6 +152,15 @@ export const createSplit = async ({ req, res }: Params) => {
         sunday: split[6]?.exercises || [],
       },
     });
+
+    await prisma.user.update({
+      where: {
+        id: user.id,
+      },
+      data: {
+        authSteps: 6,
+      },
+    });
     res.status(200).json(newSplit);
   } else {
     res.status(401).json({ message: 'Unauthorized' });
