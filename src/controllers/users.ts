@@ -46,6 +46,7 @@ export const getUserByToken = async ({ req, res }: Params) => {
           split: true,
           chats: {
             include: {
+              messages: true,
               participants: true,
               user: true,
             },
