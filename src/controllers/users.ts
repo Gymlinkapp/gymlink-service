@@ -47,7 +47,13 @@ export const getUserByToken = async ({ req, res }: Params) => {
           chats: {
             include: {
               messages: true,
-              participants: true,
+              participants: {
+                include: {
+                  split: true,
+                  chats: true,
+                  gym: true,
+                },
+              },
               user: true,
             },
           },
@@ -293,6 +299,9 @@ export const findUserById = async ({ req, res }: Params) => {
     const user = await prisma.user.findUnique({
       where: {
         id: userId,
+      },
+      include: {
+        split: true,
       },
     });
     res.json(user);
