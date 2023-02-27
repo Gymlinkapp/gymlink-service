@@ -39,7 +39,6 @@ export const uploadUserImage = async ({ req, res }: Params) => {
             id: user.id,
           },
           data: {
-            authSteps: 4,
             images: [...user.images, url.data.publicUrl],
           },
         });

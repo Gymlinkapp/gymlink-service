@@ -70,6 +70,33 @@ export const getUserByToken = async ({ req, res }: Params) => {
   }
 };
 
+export const updateAuthSteps = async ({ req, res }: Params) => {
+  const { token } = req.body;
+
+  const decoded = decode(token) as JWT;
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: {
+        email: decoded.email,
+      },
+    });
+    if (user) {
+      const updatedUser = await prisma.user.update({
+        where: {
+          id: user.id,
+        },
+        data: {
+          authSteps: req.body.authSteps,
+        },
+      });
+      res.status(200).json(updatedUser);
+    }
+  } catch (error) {
+    console.log(error);
+  }
+};
+
 export const editUser = async ({ req, res }: Params) => {
   const { token } = req.body;
 
@@ -93,20 +120,20 @@ export const editUser = async ({ req, res }: Params) => {
         },
       });
       res.status(200).json(updatedUser);
-    }
-
-    // if the user is signedin
-    if (user && !req.body.gym && !req.body.tags) {
+    } else {
       const updatedUser = await prisma.user.update({
         where: {
           email: decoded.email,
         },
         data: {
+          // ...req.body except token,
           ...req.body,
         },
       });
       res.status(200).json(updatedUser);
     }
+
+    // if the user is signedin
   } catch (error) {
     console.log(error);
   }

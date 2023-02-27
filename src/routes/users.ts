@@ -9,6 +9,7 @@ import {
   findNearByUsers,
   findUserById,
   getUserByToken,
+  updateAuthSteps,
 } from '../controllers/users';
 import { uploadUserImage } from '../controllers/userImages';
 
@@ -35,6 +36,10 @@ userRouter.post(
 
 // edit a user
 userRouter.put('/users', async (req, res) => await editUser({ req, res }));
+userRouter.post(
+  '/users/authSteps',
+  async (req, res) => await updateAuthSteps({ req, res })
+);
 
 userRouter.post(
   '/users/addGym',
