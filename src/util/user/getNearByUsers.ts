@@ -1,7 +1,7 @@
 import { PrismaClient, User } from '@prisma/client';
 
 const prisma = new PrismaClient();
-export const findNearUsers = async (user: User) => {
+export const findNearUsers = async (user: User): Promise<User[]> => {
   // get user's current gym
   const gym = await prisma.gym.findFirst({
     where: {
@@ -30,21 +30,20 @@ export const findNearUsers = async (user: User) => {
         },
       },
     },
-    include: {
-      friends: true,
-    },
   });
 
   // get user's friends
-  const friends = await prisma.user.findUnique({
-    where: {
-      id: user.id,
-    },
-    include: {
-      friends: true,
-    },
-  });
-  return users.filter(
-    (u) => u.id !== user.id && !friends?.friends?.some((f) => f.id === u.id)
-  );
+  /* const friends = await prisma.user.findUnique({ */
+  /*   where: { */
+  /*     id: user.id, */
+  /*   }, */
+  /*   include: { */
+  /*     friends: true, */
+  /*   }, */
+  /* }); */
+  /* return users.filter( */
+  /*   (u) => u.id !== user.id && !friends?.friends?.some((f) => f.id === u.id) */
+  /* ); */
+
+  return users.filter((u) => u.id !== user.id);
 };

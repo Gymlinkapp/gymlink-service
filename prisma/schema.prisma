@@ -25,6 +25,15 @@ model User {
   latitude    Float?
   authSteps   Int      @default(0)
 
+  feed   User[] @relation("UserFeed")
+  feedOf User[] @relation("UserFeed")
+
+  seen     String[]
+  // along with sending a friend request, the user's id is stored in `liked`
+  liked    String[]
+  // similar, when a user is disliked, their id is stored here
+  disliked String[]
+
   // social aspects
   chats              Chat[]          @relation("participants")
   Message            Message[]
@@ -45,11 +54,12 @@ model User {
 
   split Split? @relation(fields: [splitId], references: [id])
 
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  chatId     String?
-  Chat       Chat?
-  splitId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  chatId    String?
+  Chat      Chat?
+  splitId   String?
+  userId    String?
 }
 
 model Gym {

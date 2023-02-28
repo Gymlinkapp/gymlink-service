@@ -22,7 +22,24 @@ export const findNearByUsers = async ({ req, res }: Params) => {
       });
       if (user) {
         const users = await findNearUsers(user);
-        res.status(200).json(users);
+
+        const userWihFeed = await prisma.user.update({
+          where: {
+            id: user.id,
+          },
+          data: {
+            feed: {
+              connect: users.map((user) => ({
+                id: user.id,
+              })),
+            },
+          },
+          include: {
+            feed: true,
+          },
+        });
+
+        res.status(200).json(userWihFeed.feed);
       }
     } catch (error) {
       console.log(error);
