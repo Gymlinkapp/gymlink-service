@@ -4,6 +4,11 @@ import { decode } from 'jsonwebtoken';
 
 const prisma = new PrismaClient();
 
+/**
+ * We create a friend request, update the user's liked array to include the user they just liked, and
+ * then update the user's feed to not include the user they just liked
+ * @param {Params}  - Params
+ */
 export const sendFriendRequest = async ({ req, res }: Params) => {
   // fromUser -> toUser
   const { fromUserId, toUserId } = req.body;
@@ -20,6 +25,34 @@ export const sendFriendRequest = async ({ req, res }: Params) => {
           connect: {
             id: toUserId,
           },
+        },
+      },
+    });
+
+    const user = await prisma.user.update({
+      where: {
+        id: fromUserId,
+      },
+      data: {
+        liked: { push: toUserId },
+      },
+      include: { feed: true },
+    });
+    // create the new feed without the seen user
+    const newFeed = user.feed.filter((u) => {
+      // return the new feed without the seen user
+      return u.id !== toUserId;
+    });
+    // update the user's feed to not include the user they just liked
+    await prisma.user.update({
+      where: {
+        id: fromUserId,
+      },
+      data: {
+        feed: {
+          set: newFeed.map((u) => {
+            return { id: u.id };
+          }),
         },
       },
     });
