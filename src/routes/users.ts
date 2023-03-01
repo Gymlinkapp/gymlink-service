@@ -9,6 +9,7 @@ import {
   findNearByUsers,
   findUserById,
   getUserByToken,
+  seeUser,
   updateAuthSteps,
 } from '../controllers/users';
 import { uploadUserImage } from '../controllers/userImages';
@@ -32,6 +33,12 @@ userRouter.post(
   '/users/images',
   upload.single('image'),
   async (req, res) => await uploadUserImage({ req, res })
+);
+
+// when a user scrolls on a user, they won't be able to see their profile again after swiping past.
+userRouter.post(
+  '/users/seeUser',
+  async (req, res) => await seeUser({ req, res })
 );
 
 // edit a user

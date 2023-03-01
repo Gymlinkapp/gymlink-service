@@ -61,6 +61,7 @@ export const getUserByToken = async ({ req, res }: Params) => {
         },
         include: {
           split: true,
+          feed: true,
           chats: {
             include: {
               messages: true,
@@ -349,6 +350,68 @@ export const findUserById = async ({ req, res }: Params) => {
       },
     });
     res.json(user);
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+/**
+ * If the user is found, update the seen array with the seen user id if the seen user id is not already
+ * in the seen array
+ * @param {Params}  - Params - this is the type of the parameters that are passed into the function.
+ */
+export const seeUser = async ({ req, res }: Params) => {
+  const { token, seenUserId } = req.body;
+  const decoded = decode(token) as JWT;
+  try {
+    // get user
+    const user = await prisma.user.findUnique({
+      where: { email: decoded.email },
+      include: {
+        feed: true,
+      },
+    });
+    if (user) {
+      // if there is a user found, update the seen array with the seen user id if the seen user id is not already in the seen array
+      if (!user.seen.includes(seenUserId)) {
+        const userWithSeenOther = await prisma.user.update({
+          where: {
+            id: user.id,
+          },
+          data: {
+            seen: { push: seenUserId },
+          },
+          include: {
+            feed: true,
+          },
+        });
+
+        // update the users feed to not include the seen user if the seen user is in the seen array. This will remove the seen user from the feed.
+
+        // create the new feed without the seen user
+        const newFeed = userWithSeenOther.feed.filter((u) => {
+          // return the new feed without the seen user
+          return u.id !== seenUserId;
+        });
+
+        const updatedUser = await prisma.user.update({
+          where: {
+            id: user.id,
+          },
+          data: {
+            feed: {
+              set: newFeed.map((u) => {
+                return { id: u.id };
+              }),
+            },
+          },
+        });
+
+        res.status(200).json({ user: updatedUser });
+      }
+    } else {
+      res.status(401).json({ message: 'Unauthorized' });
+    }
   } catch (error) {
     console.log(error);
   }
