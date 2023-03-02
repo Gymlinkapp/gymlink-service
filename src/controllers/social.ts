@@ -66,10 +66,12 @@ export const sendFriendRequest = async ({ req, res }: Params) => {
 export const dislikeUser = async ({ req, res }: Params) => {
   const { token, dislikedUserId } = req.body;
 
+  const decoded = decode(token) as JWT;
+
   try {
     const user = await prisma.user.update({
       where: {
-        id: token,
+        email: decoded.email,
       },
       data: {
         disliked: { push: dislikedUserId },
@@ -84,7 +86,7 @@ export const dislikeUser = async ({ req, res }: Params) => {
     // update the user's feed to not include the user they just liked
     await prisma.user.update({
       where: {
-        id: token,
+        id: user.id,
       },
       data: {
         feed: {
