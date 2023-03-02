@@ -2,6 +2,7 @@ import express from 'express';
 import {
   acceptFriendRequest,
   declineFriendRequest,
+  dislikeUser,
   getFriendRequests,
   getFriends,
   sendFriendRequest,
@@ -35,6 +36,11 @@ socialRouter.get(
 socialRouter.get(
   '/social/getFriends/:token',
   async (req, res) => await getFriends({ req, res })
+);
+
+socialRouter.post(
+  '/social/dislikeUser',
+  async (req, res) => await dislikeUser({ req, res })
 );
 
 export default socialRouter;

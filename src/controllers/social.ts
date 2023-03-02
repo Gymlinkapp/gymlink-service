@@ -63,6 +63,44 @@ export const sendFriendRequest = async ({ req, res }: Params) => {
   }
 };
 
+export const dislikeUser = async ({ req, res }: Params) => {
+  const { token, dislikedUserId } = req.body;
+
+  try {
+    const user = await prisma.user.update({
+      where: {
+        id: token,
+      },
+      data: {
+        disliked: { push: dislikedUserId },
+      },
+      include: { feed: true },
+    });
+    // create the new feed without the seen user
+    const newFeed = user.feed.filter((u) => {
+      // return the new feed without the seen user
+      return u.id !== dislikedUserId;
+    });
+    // update the user's feed to not include the user they just liked
+    await prisma.user.update({
+      where: {
+        id: token,
+      },
+      data: {
+        feed: {
+          set: newFeed.map((u) => {
+            return { id: u.id };
+          }),
+        },
+      },
+    });
+
+    res.json(user);
+  } catch (error) {
+    console.log(error);
+  }
+};
+
 export const acceptFriendRequest = async ({ req, res }: Params) => {
   // find the friend request
   const { friendRequestId } = req.body;
