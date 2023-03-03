@@ -294,7 +294,22 @@ export const addGym = async ({ req, res }: Params) => {
             },
           },
         });
-        res.status(200).json(updatedUser);
+
+        const users = await findNearUsers(updatedUser);
+
+        const updatedUser2 = await prisma.user.update({
+          where: {
+            id: user.id,
+          },
+          data: {
+            feed: {
+              connect: users.map((user) => ({
+                id: user.id,
+              })),
+            },
+          },
+        });
+        res.status(200).json(updatedUser2);
       } else {
         // gym doesn't exist so create it
         const newGym = await prisma.gym.create({
@@ -327,14 +342,31 @@ export const addGym = async ({ req, res }: Params) => {
           },
         });
 
+        const users = await findNearUsers(updatedUser);
+
+        const updatedUser2 = await prisma.user.update({
+          where: {
+            id: user.id,
+          },
+          data: {
+            feed: {
+              connect: users.map((user) => ({
+                id: user.id,
+              })),
+            },
+          },
+        });
+
         // new gym with user should work so return the newly updated user with the new gym.
-        res.status(200).json(updatedUser);
+        res.status(200).json(updatedUser2);
       }
     } else {
       res.status(401).json({ message: 'Unable to join gym' });
+      console.log('nope');
     }
   } catch {
     res.status(401).json({ message: 'Unauthorized' });
+    console.log('nope');
   }
 };
 
