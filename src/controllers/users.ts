@@ -161,11 +161,114 @@ export const deleteUser = async ({ req, res }: Params) => {
   const { token } = req.params;
   const decoded = decode(token as string) as JWT;
   try {
-    const user = await prisma.user.delete({
+    const user = await prisma.user.findFirst({
       where: {
         email: decoded.email,
       },
     });
+
+    if (user) {
+      // delete friend requests
+      await prisma.friendRequest.deleteMany({
+        where: {
+          OR: [
+            {
+              fromUserId: user.id,
+            },
+            {
+              toUserId: user.id,
+            },
+          ],
+        },
+      });
+
+      // delete chats
+      await prisma.chat.deleteMany({
+        where: {
+          participants: {
+            some: {
+              userId: user.id,
+            },
+          },
+        },
+      });
+
+      // delete messages
+      await prisma.message.deleteMany({
+        where: {
+          chat: {
+            participants: {
+              some: {
+                userId: user.id,
+              },
+            },
+          },
+        },
+      });
+
+      // delete user
+      await prisma.user.delete({
+        where: {
+          id: user.id,
+        },
+      });
+    }
+    res.json(user);
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+// reset user's state
+export const resetUser = async ({ req, res }: Params) => {
+  const { token } = req.params;
+  const decoded = decode(token as string) as JWT;
+  try {
+    const user = await prisma.user.findFirst({
+      where: {
+        email: decoded.email,
+      },
+    });
+
+    if (user) {
+      // delete friend requests
+      await prisma.friendRequest.deleteMany({
+        where: {
+          OR: [
+            {
+              fromUserId: user.id,
+            },
+            {
+              toUserId: user.id,
+            },
+          ],
+        },
+      });
+
+      // delete chats
+      await prisma.chat.deleteMany({
+        where: {
+          participants: {
+            some: {
+              userId: user.id,
+            },
+          },
+        },
+      });
+
+      // delete messages
+      await prisma.message.deleteMany({
+        where: {
+          chat: {
+            participants: {
+              some: {
+                userId: user.id,
+              },
+            },
+          },
+        },
+      });
+    }
     res.json(user);
   } catch (error) {
     console.log(error);
