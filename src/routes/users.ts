@@ -2,6 +2,7 @@ import express from 'express';
 import multer from 'multer';
 import {
   addGym,
+  allUsers,
   createSplit,
   deleteUser,
   editSplit,
@@ -75,5 +76,7 @@ userRouter.delete(
   '/users/:token',
   async (req, res) => await deleteUser({ req, res })
 );
+
+userRouter.get('/allUsers', async (req, res) => await allUsers({ req, res }));
 
 export default userRouter;

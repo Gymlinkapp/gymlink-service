@@ -551,3 +551,12 @@ export const seeUser = async ({ req, res }: Params) => {
     console.log(error);
   }
 };
+
+export const allUsers = async ({ req, res }: Params) => {
+  try {
+    const users = await prisma.user.findMany({});
+    res.json(users);
+  } catch (error) {
+    console.log(error);
+  }
+};
