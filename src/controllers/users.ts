@@ -560,3 +560,63 @@ export const allUsers = async ({ req, res }: Params) => {
     console.log(error);
   }
 };
+
+export const dashboardUserDelete = async ({ req, res }: Params) => {
+  try {
+    const user = await prisma.user.findFirst({
+      where: {
+        id: req.params.id,
+      },
+    });
+
+    if (user) {
+      // delete friend requests
+      await prisma.friendRequest.deleteMany({
+        where: {
+          OR: [
+            {
+              fromUserId: user.id,
+            },
+            {
+              toUserId: user.id,
+            },
+          ],
+        },
+      });
+
+      // delete chats
+      await prisma.chat.deleteMany({
+        where: {
+          participants: {
+            some: {
+              userId: user.id,
+            },
+          },
+        },
+      });
+
+      // delete messages
+      await prisma.message.deleteMany({
+        where: {
+          chat: {
+            participants: {
+              some: {
+                userId: user.id,
+              },
+            },
+          },
+        },
+      });
+
+      // delete user
+      await prisma.user.delete({
+        where: {
+          id: user.id,
+        },
+      });
+    }
+    res.json(user);
+  } catch (error) {
+    console.log(error);
+  }
+};

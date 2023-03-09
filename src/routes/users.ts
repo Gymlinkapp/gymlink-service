@@ -4,6 +4,7 @@ import {
   addGym,
   allUsers,
   createSplit,
+  dashboardUserDelete,
   deleteUser,
   editSplit,
   editUser,
@@ -78,5 +79,9 @@ userRouter.delete(
 );
 
 userRouter.get('/allUsers', async (req, res) => await allUsers({ req, res }));
+userRouter.delete(
+  '/dashboardUserDelete/:id',
+  async (req, res) => await dashboardUserDelete({ req, res })
+);
 
 export default userRouter;
