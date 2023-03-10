@@ -156,6 +156,26 @@ export const editUser = async ({ req, res }: Params) => {
     console.log(error);
   }
 };
+export const editUserDashboard = async ({ req, res }: Params) => {
+  const { id } = req.params;
+
+  try {
+    const updatedUser = await prisma.user.update({
+      where: {
+        id: id,
+      },
+      data: {
+        // ...req.body except token,
+        ...req.body,
+      },
+    });
+    res.status(200).json(updatedUser);
+
+    // if the user is signedin
+  } catch (error) {
+    console.log(error);
+  }
+};
 
 export const deleteUser = async ({ req, res }: Params) => {
   const { token } = req.params;

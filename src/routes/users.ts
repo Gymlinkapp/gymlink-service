@@ -8,6 +8,7 @@ import {
   deleteUser,
   editSplit,
   editUser,
+  editUserDashboard,
   findNearByUsers,
   findUserById,
   getUserByToken,
@@ -86,6 +87,10 @@ userRouter.get('/allUsers', async (req, res) => await allUsers({ req, res }));
 userRouter.delete(
   '/dashboardUserDelete/:id',
   async (req, res) => await dashboardUserDelete({ req, res })
+);
+userRouter.put(
+  '/dashboardEditUser/:id',
+  async (req, res) => await editUserDashboard({ req, res })
 );
 
 export default userRouter;
