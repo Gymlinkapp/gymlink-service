@@ -7,6 +7,59 @@ const generateRandomPhoneNumber = () => {
   return Math.floor(1000000000 + Math.random() * 9000000000).toString();
 };
 
+// create a function that will create a user with a unique email
+// and a random phone number
+
+const generateEmail = (firstName: string, lastName: string) => {
+  return `${firstName.toLowerCase()}${lastName.toLowerCase()}@gmail.com`;
+};
+const createUser = async (firstName: string, lastName: string) => {
+  return await prisma.user.create({
+    data: {
+      email: generateEmail(firstName, lastName),
+      firstName,
+      lastName,
+      password: bcrypt.hashSync('password', 10),
+      age: 25,
+      authSteps: 7,
+      bio: 'I love to workout and I am looking for someone to workout with! Fit4Less is my favorite gym and I am looking for someone to go with me!',
+      phoneNumber: generateRandomPhoneNumber(),
+      verified: true,
+      isBot: true,
+      images: [
+        'https://api.lorem.space/image/face?w=500&h=500',
+        'https://api.lorem.space/image/face?w=500&h=500',
+        'https://api.lorem.space/image/face?w=500&h=500',
+      ],
+      split: {
+        create: {
+          monday: ['chest', 'back'],
+          tuesday: ['legs'],
+          wednesday: ['chest', 'back'],
+          thursday: ['legs'],
+          friday: ['chest', 'back'],
+          saturday: ['legs'],
+          sunday: ['chest', 'back'],
+        },
+      },
+      gym: {
+        create: {
+          name: 'Fit4Less',
+          location: {
+            create: {
+              lat: 42.300916870848894,
+              long: -82.97919754434378,
+            },
+          },
+        },
+      },
+    },
+    select: {
+      isBot: true,
+    },
+  });
+};
+
 async function main() {
   const user1 = await prisma.user.upsert({
     where: { email: 'jennyjane@gmail.com' },
@@ -25,6 +78,18 @@ async function main() {
       authSteps: 7,
       phoneNumber: generateRandomPhoneNumber(),
       verified: true,
+      isBot: true,
+      split: {
+        create: {
+          monday: ['chest', 'back'],
+          tuesday: ['legs'],
+          wednesday: ['chest', 'back'],
+          thursday: ['legs'],
+          friday: ['chest', 'back'],
+          saturday: ['legs'],
+          sunday: ['chest', 'back'],
+        },
+      },
       gym: {
         create: {
           name: 'Fit4Less',
@@ -57,6 +122,7 @@ async function main() {
       bio: 'I love to workout and I am looking for someone to workout with! Fit4Less is my favorite gym and I am looking for someone to go with me!',
       phoneNumber: generateRandomPhoneNumber(),
       verified: true,
+      isBot: true,
       gym: {
         connectOrCreate: {
           where: {
@@ -93,6 +159,7 @@ async function main() {
       authSteps: 7,
       phoneNumber: generateRandomPhoneNumber(),
       verified: true,
+      isBot: true,
       gym: {
         connectOrCreate: {
           where: {
@@ -129,6 +196,7 @@ async function main() {
       bio: 'I love to workout and I am looking for someone to workout with! Fit4Less is my favorite gym and I am looking for someone to go with me!',
       phoneNumber: generateRandomPhoneNumber(),
       verified: true,
+      isBot: true,
       gym: {
         create: {
           name: 'Raw Training Facility',
@@ -161,6 +229,7 @@ async function main() {
       bio: 'I love to workout and I am looking for someone to workout with! Fit4Less is my favorite gym and I am looking for someone to go with me!',
       phoneNumber: generateRandomPhoneNumber(),
       verified: true,
+      isBot: true,
       gym: {
         connectOrCreate: {
           where: {
@@ -197,6 +266,7 @@ async function main() {
       authSteps: 7,
       phoneNumber: generateRandomPhoneNumber(),
       verified: true,
+      isBot: true,
       gym: {
         create: {
           name: 'Powerhouse Gym Pontiac',
@@ -230,6 +300,7 @@ async function main() {
       authSteps: 7,
       phoneNumber: generateRandomPhoneNumber(),
       verified: true,
+      isBot: true,
       gym: {
         connectOrCreate: {
           where: {
@@ -266,12 +337,12 @@ async function main() {
       authSteps: 7,
       phoneNumber: generateRandomPhoneNumber(),
       verified: true,
+      isBot: true,
       gym: {
         create: {
           name: 'Power House Gym Houston',
           location: {
             create: {
-              // 29.7758855537138, -95.2850380168684
               lat: 29.7758855537138,
               long: -95.2850380168684,
             },
@@ -298,6 +369,18 @@ async function main() {
       authSteps: 7,
       phoneNumber: generateRandomPhoneNumber(),
       verified: true,
+      isBot: true,
+      split: {
+        create: {
+          monday: ['chest', 'back'],
+          tuesday: ['legs'],
+          wednesday: ['chest', 'back'],
+          thursday: ['legs'],
+          friday: ['chest', 'back'],
+          saturday: ['legs'],
+          sunday: ['chest', 'back'],
+        },
+      },
       gym: {
         create: {
           name: 'State of Fitness',
@@ -310,7 +393,16 @@ async function main() {
         },
       },
     },
+    select: {
+      isBot: true,
+    },
   });
+  const user10 = await createUser('June', 'Jame');
+  const user11 = await createUser('Jame', 'June');
+  const user12 = await createUser('Lired', 'Lire');
+  const user13 = await createUser('Kevin', 'Kev');
+  const user14 = await createUser('Gordon', 'Gord');
+  const user15 = await createUser('Terry', 'Ter');
   console.log({
     user1,
     user2,
@@ -321,6 +413,12 @@ async function main() {
     user7,
     user8,
     user9,
+    user10,
+    user11,
+    user12,
+    user13,
+    user14,
+    user15,
   });
 }
 

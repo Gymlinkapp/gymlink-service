@@ -553,8 +553,17 @@ export const seeUser = async ({ req, res }: Params) => {
 };
 
 export const allUsers = async ({ req, res }: Params) => {
+  const { page } = req.params;
   try {
     const users = await prisma.user.findMany({});
+    // pagination for users
+    // const users = await prisma.user.findMany({
+    //   skip: (Number(page) - 1) * 10,
+    //   take: 10,
+    //   orderBy: {
+    //     createdAt: 'desc',
+    //   },
+    // });
     res.json(users);
   } catch (error) {
     console.log(error);
@@ -562,10 +571,11 @@ export const allUsers = async ({ req, res }: Params) => {
 };
 
 export const dashboardUserDelete = async ({ req, res }: Params) => {
+  const { id } = req.params;
   try {
     const user = await prisma.user.findFirst({
       where: {
-        id: req.params.id,
+        id: id,
       },
     });
 

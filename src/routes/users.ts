@@ -78,6 +78,10 @@ userRouter.delete(
   async (req, res) => await deleteUser({ req, res })
 );
 
+// userRouter.get(
+//   '/allUsers/:page',
+//   async (req, res) => await allUsers({ req, res })
+// );
 userRouter.get('/allUsers', async (req, res) => await allUsers({ req, res }));
 userRouter.delete(
   '/dashboardUserDelete/:id',

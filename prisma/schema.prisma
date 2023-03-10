@@ -24,6 +24,7 @@ model User {
   longitude   Float?
   latitude    Float?
   authSteps   Int      @default(0)
+  isBot       Boolean  @default(false)
 
   feed   User[] @relation("UserFeed")
   feedOf User[] @relation("UserFeed")
