@@ -16,9 +16,6 @@ export const findNearByUsers = async ({ req, res }: Params) => {
         where: {
           email: decoded.email,
         },
-        include: {
-          friendRequests: true,
-        },
       });
       if (user) {
         const users = await findNearUsers(user);
@@ -188,20 +185,6 @@ export const deleteUser = async ({ req, res }: Params) => {
     });
 
     if (user) {
-      // delete friend requests
-      await prisma.friendRequest.deleteMany({
-        where: {
-          OR: [
-            {
-              fromUserId: user.id,
-            },
-            {
-              toUserId: user.id,
-            },
-          ],
-        },
-      });
-
       // delete chats
       await prisma.chat.deleteMany({
         where: {
@@ -251,20 +234,6 @@ export const resetUser = async ({ req, res }: Params) => {
     });
 
     if (user) {
-      // delete friend requests
-      await prisma.friendRequest.deleteMany({
-        where: {
-          OR: [
-            {
-              fromUserId: user.id,
-            },
-            {
-              toUserId: user.id,
-            },
-          ],
-        },
-      });
-
       // delete chats
       await prisma.chat.deleteMany({
         where: {
@@ -600,20 +569,6 @@ export const dashboardUserDelete = async ({ req, res }: Params) => {
     });
 
     if (user) {
-      // delete friend requests
-      await prisma.friendRequest.deleteMany({
-        where: {
-          OR: [
-            {
-              fromUserId: user.id,
-            },
-            {
-              toUserId: user.id,
-            },
-          ],
-        },
-      });
-
       // delete chats
       await prisma.chat.deleteMany({
         where: {

@@ -193,11 +193,11 @@ authRouter.post('/auth/details', async (req, res) => {
 
 // sign in
 authRouter.post('/auth/signin', async (req, res) => {
-  const email = req.body.email;
+  const { email } = req.body;
   try {
     const user = await prisma.user.findFirst({
       where: {
-        email: req.body.email,
+        email: email,
       },
     });
 
