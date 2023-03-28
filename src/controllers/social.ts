@@ -15,6 +15,7 @@ export const LinkWithUser = async ({ req, res }: Params) => {
       },
     });
 
+    // check if the user is authorized with a token
     if (!user) {
       res.status(401).json({ message: 'You are not authorized' });
       return;

@@ -19,6 +19,8 @@ model User {
   password    String
   age         Int
   bio         String?
+  gender      String?
+  race        String?
   images      String[]
   tags        String[]
   longitude   Float?

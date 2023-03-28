@@ -49,6 +49,8 @@ authRouter.post('/auth/sendsms', async (req, res) => {
             verificationCode: generatedVerificationCode,
             firstName: '',
             lastName: '',
+            gender: '',
+            race: '',
             email: '',
             password: '',
             age: 0,
@@ -149,42 +151,42 @@ authRouter.post('/auth/verificationcode', async (req, res) => {
 });
 
 authRouter.post('/auth/details', async (req, res) => {
+  console.log(req.body);
   try {
     const user = await prisma.user.findFirst({
       where: {
         phoneNumber: req.body.phoneNumber,
       },
     });
+    console.log(user);
     if (user && user.verified) {
-      if (user.firstName && user.lastName && user.email && user.password) {
-        res.json({ message: 'User has already filled out details' });
-      } else {
-        const userWithDetails = await prisma.user.update({
-          where: {
-            phoneNumber: req.body.phoneNumber,
-          },
-          data: {
-            firstName: req.body.firstName,
-            lastName: req.body.lastName,
-            email: req.body.email.toLowerCase(),
-            // password: bcrypt.hashSync(req.body.password, 10),
-            age: req.body.age,
-            authSteps: req.body.authSteps,
-            bio: req.body.bio,
-            tempJWT: sign(
-              { email: req.body.email },
-              process.env.JWT_SECRET || ''
-            ),
-          },
-        });
-
-        res.json({
-          message: 'user updated',
-          authStep: userWithDetails.authSteps,
-          user: userWithDetails,
-          token: userWithDetails.tempJWT,
-        });
-      }
+      const userWithDetails = await prisma.user.update({
+        where: {
+          phoneNumber: req.body.phoneNumber,
+        },
+        data: {
+          firstName: req.body.firstName,
+          lastName: req.body.lastName,
+          email: req.body.email.toLowerCase(),
+          // password: bcrypt.hashSync(req.body.password, 10),
+          age: req.body.age,
+          gender: req.body.gender,
+          race: req.body.race,
+          authSteps: 3,
+          bio: req.body.bio,
+          tempJWT: sign(
+            { email: req.body.email },
+            process.env.JWT_SECRET || ''
+          ),
+        },
+      });
+      console.log(userWithDetails);
+      res.json({
+        message: 'user updated',
+        authStep: userWithDetails.authSteps,
+        user: userWithDetails,
+        token: userWithDetails.tempJWT,
+      });
     }
   } catch (error) {
     res.json({ message: 'error', error: error });
