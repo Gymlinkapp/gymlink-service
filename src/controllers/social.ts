@@ -26,6 +26,7 @@ export const LinkWithUser = async ({ req, res }: Params) => {
         id: fromUserId,
       },
       select: {
+        feed: true,
         firstName: true,
         lastName: true,
         id: true,
@@ -37,6 +38,7 @@ export const LinkWithUser = async ({ req, res }: Params) => {
         id: toUserId,
       },
       select: {
+        feed: true,
         firstName: true,
         lastName: true,
         id: true,
@@ -86,6 +88,34 @@ export const LinkWithUser = async ({ req, res }: Params) => {
           },
           name: true,
           id: true,
+        },
+      });
+
+      // filter the feed of the user's in the chat to not include the user
+      const fromUsersFeed = fromUser.feed.filter(
+        (user) => user.id !== toUserId
+      );
+      await prisma.user.update({
+        where: {
+          id: fromUserId,
+        },
+        data: {
+          feed: {
+            set: fromUsersFeed.map((user) => ({ id: user.id })),
+          },
+        },
+      });
+
+      const toUsersFeed = toUser.feed.filter((user) => user.id !== fromUserId);
+      await prisma.user.update({
+        where: {
+          id: toUserId,
+        },
+        data: {
+          feed: {
+            // filter the toUser's feed to not include the fromUser
+            set: toUsersFeed.map((user) => ({ id: user.id })),
+          },
         },
       });
       res.status(200).json({
