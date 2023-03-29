@@ -6,7 +6,7 @@ const prisma = new PrismaClient();
 
 export const LinkWithUser = async ({ req, res }: Params) => {
   // find the friend request
-  const { userId, linkedUserId, token } = req.body;
+  const { fromUserId, toUserId, token } = req.body;
   try {
     const decoded = decode(token) as JWT;
     const user = await prisma.user.findUnique({
@@ -23,20 +23,24 @@ export const LinkWithUser = async ({ req, res }: Params) => {
 
     const fromUser = await prisma.user.findUnique({
       where: {
-        id: userId,
+        id: fromUserId,
       },
       select: {
         firstName: true,
         lastName: true,
+        id: true,
+        images: true,
       },
     });
     const toUser = await prisma.user.findUnique({
       where: {
-        id: linkedUserId,
+        id: toUserId,
       },
       select: {
         firstName: true,
         lastName: true,
+        id: true,
+        images: true,
       },
     });
 
@@ -45,13 +49,13 @@ export const LinkWithUser = async ({ req, res }: Params) => {
       where: {
         participants: {
           some: {
-            id: userId,
+            id: fromUserId,
           },
         },
         AND: {
           participants: {
             some: {
-              id: linkedUserId,
+              id: toUserId,
             },
           },
         },
@@ -68,11 +72,37 @@ export const LinkWithUser = async ({ req, res }: Params) => {
         data: {
           name: `${fromUser.firstName} ${fromUser.lastName} and ${toUser.firstName} ${toUser.lastName}`,
           participants: {
-            connect: [{ id: userId }, { id: linkedUserId }],
+            connect: [{ id: fromUserId }, { id: toUserId }],
+          },
+        },
+        select: {
+          participants: {
+            select: {
+              id: true,
+              images: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+          name: true,
+          id: true,
+        },
+      });
+      res.status(200).json({
+        chat: {
+          name: chat.name,
+          id: chat.id,
+          participants: {
+            toUser: {
+              id: toUser.id,
+              firstName: toUser.firstName,
+              lastName: toUser.lastName,
+              images: toUser.images,
+            },
           },
         },
       });
-      res.status(200).json({ chat });
+
       return;
     }
 
@@ -81,7 +111,7 @@ export const LinkWithUser = async ({ req, res }: Params) => {
       return;
     }
 
-    if (userId === linkedUserId) {
+    if (fromUserId === toUserId) {
       res.status(400).json({ message: 'You cannot link with yourself' });
       return;
     }
