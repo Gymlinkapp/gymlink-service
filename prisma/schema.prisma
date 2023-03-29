@@ -19,6 +19,8 @@ model User {
   password    String
   age         Int
   bio         String?
+  gender      String?
+  race        String?
   images      String[]
   tags        String[]
   longitude   Float?
@@ -29,20 +31,13 @@ model User {
   feed   User[] @relation("UserFeed")
   feedOf User[] @relation("UserFeed")
 
-  seen     String[]
-  // along with sending a friend request, the user's id is stored in `liked`
-  liked    String[]
-  // similar, when a user is disliked, their id is stored here
-  disliked String[]
+  seen String[]
 
   // social aspects
-  chats              Chat[]          @relation("participants")
-  Message            Message[]
-  friendRequests     FriendRequest[] @relation("toUser")
-  sentFriendRequests FriendRequest[] @relation("fromUser")
-  friends            User[]          @relation("friends")
-  friendsRelation    User[]          @relation("friends")
-  streak             Int             @default(0)
+  chats   Chat[]    @relation("participants")
+  Message Message[]
+
+  streak Int @default(0)
 
   // user settings
   tempJWT          String?
@@ -80,19 +75,6 @@ model Location {
   lat  Float
   long Float
   Gym  Gym[]
-}
-
-model FriendRequest {
-  id        String   @id @default(cuid())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  fromUser User @relation("fromUser", fields: [fromUserId], references: [id])
-  toUser   User @relation("toUser", fields: [toUserId], references: [id])
-
-  fromUserId String
-  toUserId   String
-  userId     String?
 }
 
 // the schedule will have each day of the week as an array of strings

@@ -4,240 +4,147 @@ import { decode } from 'jsonwebtoken';
 
 const prisma = new PrismaClient();
 
-/**
- * We create a friend request, update the user's liked array to include the user they just liked, and
- * then update the user's feed to not include the user they just liked
- * @param {Params}  - Params
- */
-export const sendFriendRequest = async ({ req, res }: Params) => {
-  // fromUser -> toUser
-  const { fromUserId, toUserId } = req.body;
-
+export const LinkWithUser = async ({ req, res }: Params) => {
+  // find the friend request
+  const { fromUserId, toUserId, token } = req.body;
   try {
-    const friendRequest = await prisma.friendRequest.create({
-      data: {
-        fromUser: {
-          connect: {
-            id: fromUserId,
-          },
-        },
-        toUser: {
-          connect: {
-            id: toUserId,
-          },
-        },
-      },
-    });
-
-    const user = await prisma.user.update({
-      where: {
-        id: fromUserId,
-      },
-      data: {
-        liked: { push: toUserId },
-      },
-      include: { feed: true },
-    });
-    // create the new feed without the seen user
-    const newFeed = user.feed.filter((u) => {
-      // return the new feed without the seen user
-      return u.id !== toUserId;
-    });
-    // update the user's feed to not include the user they just liked
-    await prisma.user.update({
-      where: {
-        id: fromUserId,
-      },
-      data: {
-        feed: {
-          set: newFeed.map((u) => {
-            return { id: u.id };
-          }),
-        },
-      },
-    });
-
-    res.json(friendRequest);
-  } catch (error) {
-    console.log(error);
-  }
-};
-
-export const dislikeUser = async ({ req, res }: Params) => {
-  const { token, dislikedUserId } = req.body;
-
-  const decoded = decode(token) as JWT;
-
-  try {
-    const user = await prisma.user.update({
+    const decoded = decode(token) as JWT;
+    const user = await prisma.user.findUnique({
       where: {
         email: decoded.email,
       },
-      data: {
-        disliked: { push: dislikedUserId },
-      },
-      include: { feed: true },
-    });
-    // create the new feed without the seen user
-    const newFeed = user.feed.filter((u) => {
-      // return the new feed without the seen user
-      return u.id !== dislikedUserId;
-    });
-    // update the user's feed to not include the user they just liked
-    await prisma.user.update({
-      where: {
-        id: user.id,
-      },
-      data: {
-        feed: {
-          set: newFeed.map((u) => {
-            return { id: u.id };
-          }),
-        },
-      },
     });
 
-    res.json(user);
-  } catch (error) {
-    console.log(error);
-  }
-};
-
-export const acceptFriendRequest = async ({ req, res }: Params) => {
-  // find the friend request
-  const { friendRequestId } = req.body;
-  console.log(friendRequestId);
-  try {
-    const friendRequest = await prisma.friendRequest.findUnique({
-      where: {
-        id: friendRequestId,
-      },
-    });
-    if (friendRequest) {
-      // get users from friend request:
-      const fromUser = await prisma.user.findFirst({
-        where: {
-          id: friendRequest.fromUserId,
-        },
-      });
-      const toUser = await prisma.user.findFirst({
-        where: {
-          id: friendRequest.toUserId,
-        },
-      });
-
-      if (fromUser && toUser) {
-        // create the friendship by updating user with new friend
-        await prisma.user.update({
-          where: {
-            id: fromUser.id,
-          },
-          data: {
-            friends: {
-              connect: {
-                id: toUser.id,
-              },
-            },
-            Chat: {
-              create: {
-                name: `${fromUser.firstName} and ${toUser.firstName}`,
-                participants: {
-                  connect: [{ id: fromUser.id }, { id: toUser.id }],
-                },
-              },
-            },
-          },
-        });
-
-        await prisma.user.update({
-          where: {
-            id: toUser.id,
-          },
-          data: {
-            friends: {
-              connect: {
-                id: fromUser.id,
-              },
-            },
-          },
-        });
-
-        // delete the friend request
-        await prisma.friendRequest.delete({
-          where: {
-            id: friendRequestId,
-          },
-        });
-
-        // get friends of the user
-        const friends = await prisma.user.findUnique({
-          where: {
-            id: fromUser.id,
-          },
-          include: {
-            friends: true,
-          },
-        });
-        res.json(friends);
-      }
+    // check if the user is authorized with a token
+    if (!user) {
+      res.status(401).json({ message: 'You are not authorized' });
+      return;
     }
-  } catch (error) {
-    console.log(error);
-  }
-};
 
-export const declineFriendRequest = async ({ req, res }: Params) => {
-  const { friendRequestId } = req.body;
-  try {
-    const friendRequest = await prisma.friendRequest.delete({
+    const fromUser = await prisma.user.findUnique({
       where: {
-        id: friendRequestId,
+        id: fromUserId,
+      },
+      select: {
+        feed: true,
+        firstName: true,
+        lastName: true,
+        id: true,
+        images: true,
       },
     });
-    res.json(friendRequest);
-  } catch (error) {
-    console.log(error);
-  }
-};
+    const toUser = await prisma.user.findUnique({
+      where: {
+        id: toUserId,
+      },
+      select: {
+        feed: true,
+        firstName: true,
+        lastName: true,
+        id: true,
+        images: true,
+      },
+    });
 
-export const getFriendRequests = async ({ req, res }: Params) => {
-  const { token } = req.params;
-  const decodedEmail = decode(token as string) as JWT;
-  try {
-    const user = await prisma.user.findUnique({
+    // if users have a chat already together, don't create a new one
+    const chat = await prisma.chat.findFirst({
       where: {
-        email: decodedEmail.email,
+        participants: {
+          some: {
+            id: fromUserId,
+          },
+        },
+        AND: {
+          participants: {
+            some: {
+              id: toUserId,
+            },
+          },
+        },
       },
     });
-    const userId = user?.id;
-    const friendRequests = await prisma.friendRequest.findMany({
-      where: {
-        toUserId: userId,
-      },
-      include: {
-        fromUser: true,
-      },
-    });
-    res.json(friendRequests);
-  } catch (error) {
-    console.log(error);
-  }
-};
 
-export const getFriends = async ({ req, res }: Params) => {
-  const { token } = req.params;
-  try {
-    const decodedEmail = decode(token as string) as JWT;
-    const user = await prisma.user.findUnique({
-      where: {
-        email: decodedEmail.email,
-      },
-      include: {
-        friends: true,
-        chats: true,
-      },
-    });
-    res.json(user?.friends);
+    if (chat) {
+      res.status(200).json({ chat });
+      return;
+    }
+    if (fromUser && toUser) {
+      // create a chat between the two users
+      const chat = await prisma.chat.create({
+        data: {
+          name: `${fromUser.firstName} ${fromUser.lastName} and ${toUser.firstName} ${toUser.lastName}`,
+          participants: {
+            connect: [{ id: fromUserId }, { id: toUserId }],
+          },
+        },
+        select: {
+          participants: {
+            select: {
+              id: true,
+              images: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+          name: true,
+          id: true,
+        },
+      });
+
+      // filter the feed of the user's in the chat to not include the user
+      const fromUsersFeed = fromUser.feed.filter(
+        (user) => user.id !== toUserId
+      );
+      await prisma.user.update({
+        where: {
+          id: fromUserId,
+        },
+        data: {
+          feed: {
+            set: fromUsersFeed.map((user) => ({ id: user.id })),
+          },
+        },
+      });
+
+      const toUsersFeed = toUser.feed.filter((user) => user.id !== fromUserId);
+      await prisma.user.update({
+        where: {
+          id: toUserId,
+        },
+        data: {
+          feed: {
+            // filter the toUser's feed to not include the fromUser
+            set: toUsersFeed.map((user) => ({ id: user.id })),
+          },
+        },
+      });
+      res.status(200).json({
+        chat: {
+          name: chat.name,
+          id: chat.id,
+          participants: {
+            toUser: {
+              id: toUser.id,
+              firstName: toUser.firstName,
+              lastName: toUser.lastName,
+              images: toUser.images,
+            },
+          },
+        },
+      });
+
+      return;
+    }
+
+    if (!fromUser || !toUser) {
+      res.status(400).json({ message: 'User not found' });
+      return;
+    }
+
+    if (fromUserId === toUserId) {
+      res.status(400).json({ message: 'You cannot link with yourself' });
+      return;
+    }
   } catch (error) {
     console.log(error);
   }
