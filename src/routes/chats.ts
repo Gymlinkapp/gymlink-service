@@ -46,6 +46,7 @@ chatsRouter.get('/chats/:userId', async (req, res) => {
 // get chat by id
 chatsRouter.get('/chats/getById/:chatId', async (req, res) => {
   const { chatId } = req.params;
+  console.log(chatId);
   const chat = await prisma.chat.findFirst({
     where: {
       id: chatId,
@@ -66,6 +67,31 @@ chatsRouter.get('/chats/getById/:chatId', async (req, res) => {
     },
   });
   res.status(200).json(chat);
+});
+
+// delete chat
+chatsRouter.delete('/chats/:chatId', async (req, res) => {
+  const { chatId } = req.params;
+
+  try {
+    // have to delete the messages first
+    await prisma.message.deleteMany({
+      where: {
+        chatId: chatId,
+      },
+    });
+
+    const chat = await prisma.chat.delete({
+      where: {
+        id: chatId,
+      },
+    });
+
+    res.status(200).json(chat);
+  } catch (error) {
+    console.log(error);
+    res.status(400).json({ message: 'error' });
+  }
 });
 
 export default chatsRouter;
