@@ -86,6 +86,27 @@ io.on('connection', (socket) => {
 
   // listen to a chat-messge
   socket.on('chat-message', async (data) => {
+    const initialMessage = data.content;
+
+    // send the initial message to the room
+    await prisma.chat.update({
+      where: {
+        id: data.roomId,
+      },
+      data: {
+        messages: {
+          create: {
+            content: initialMessage,
+            sender: {
+              connect: {
+                id: data.sender.id,
+              },
+            },
+          },
+        },
+      },
+    });
+
     const chat = await prisma.chat.update({
       where: {
         id: data.roomId,

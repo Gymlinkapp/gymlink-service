@@ -33,6 +33,7 @@ export const findNearByUsers = async ({ req, res }: Params) => {
           },
           include: {
             feed: true,
+            split: true,
           },
         });
 
