@@ -43,6 +43,26 @@ io.on('connection', (socket) => {
 
   socket.on('join-chat', async (data: any) => {
     socket.join(data.roomName);
+    const initialMessage = data.message;
+
+    // send the initial message to the room
+    await prisma.chat.update({
+      where: {
+        id: data.roomId,
+      },
+      data: {
+        messages: {
+          create: {
+            content: initialMessage.content,
+            sender: {
+              connect: {
+                id: data.message.sender.id,
+              },
+            },
+          },
+        },
+      },
+    });
 
     const messages = await prisma.chat.findUnique({
       where: {
@@ -86,27 +106,6 @@ io.on('connection', (socket) => {
 
   // listen to a chat-messge
   socket.on('chat-message', async (data) => {
-    const initialMessage = data.content;
-
-    // send the initial message to the room
-    await prisma.chat.update({
-      where: {
-        id: data.roomId,
-      },
-      data: {
-        messages: {
-          create: {
-            content: initialMessage,
-            sender: {
-              connect: {
-                id: data.sender.id,
-              },
-            },
-          },
-        },
-      },
-    });
-
     const chat = await prisma.chat.update({
       where: {
         id: data.roomId,
