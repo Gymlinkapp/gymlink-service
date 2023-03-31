@@ -16,11 +16,40 @@ export const findNearByUsers = async ({ req, res }: Params) => {
         where: {
           email: decoded.email,
         },
+        include: {
+          chats: {
+            select: {
+              user: {
+                select: {
+                  id: true,
+                },
+              },
+            },
+          },
+        },
       });
       if (user) {
-        const users = await findNearUsers(user);
+        const users = await prisma.user.findMany({
+          where: {
+            id: {
+              notIn: user.chats.map((chat) => chat.user?.id as string),
+            },
+            AND: {
+              id: {
+                not: user.id,
+              },
+              chats: {
+                none: {
+                  user: {
+                    id: user.id,
+                  },
+                },
+              },
+            },
+          },
+        });
 
-        const userWihFeed = await prisma.user.update({
+        const userWithFeed = await prisma.user.update({
           where: {
             id: user.id,
           },
@@ -37,7 +66,7 @@ export const findNearByUsers = async ({ req, res }: Params) => {
           },
         });
 
-        res.status(200).json(userWihFeed.feed);
+        res.status(200).json(userWithFeed.feed);
       }
     } catch (error) {
       console.log(error);
