@@ -1,4 +1,12 @@
-import { Prisma, PrismaClient, User } from '@prisma/client';
+import {
+  Gender,
+  Goals,
+  Prisma,
+  PrismaClient,
+  SkillLevel,
+  User,
+  Workout,
+} from '@prisma/client';
 import { Request } from 'express';
 import { decode } from 'jsonwebtoken';
 import { JWT, Params } from '../types';
@@ -82,7 +90,7 @@ export const findNearByUsers = async ({ req, res }: Params) => {
 };
 
 export const filterFeed = async ({ req, res }: Params) => {
-  const { token } = req.params;
+  const { token } = req.body;
 
   const decoded = decode(token as string) as JWT;
   if (decoded) {
@@ -97,7 +105,124 @@ export const filterFeed = async ({ req, res }: Params) => {
         },
       });
       if (user) {
-        res.status(200).json({});
+        // I want this to be called whenever a filter changes (adds, removes, or changes)
+        // e.g. req.body = { filters: [ { filter: "goingToday": true }, { filter: "workout": "back" } ] }
+
+        type Filter = { filter: string; value: string | boolean };
+
+        enum EFilters {
+          goingToday = 'goingToday',
+          workout = 'workout',
+          skillLevel = 'skillLevel',
+          gender = 'gender',
+          goals = 'goals',
+        }
+        const { filters } = req.body;
+
+        type FilterValueTypeMap = {
+          [EFilters.goingToday]: boolean;
+          [EFilters.workout]: Workout[];
+          [EFilters.gender]: Gender[];
+          [EFilters.skillLevel]: SkillLevel[];
+          [EFilters.goals]: Goals[];
+          // Add new filters and their corresponding types here in the future
+        };
+
+        type FilterValue<T extends EFilters> = FilterValueTypeMap[T];
+
+        const getFilterValue = <T extends EFilters>(
+          findFilter: T
+        ): FilterValue<T> => {
+          return filters
+            .filter((filter: Filter) => filter.filter === findFilter)
+            .map((filter: Filter) => filter.value)[0] as FilterValue<T>;
+        };
+
+        const filtersData = {
+          goingToday: getFilterValue(EFilters.goingToday),
+          workout: getFilterValue(EFilters.workout)
+            ? { set: getFilterValue(EFilters.workout) }
+            : undefined,
+          gender: getFilterValue(EFilters.gender)
+            ? { set: getFilterValue(EFilters.gender) }
+            : undefined,
+          skillLevel: getFilterValue(EFilters.skillLevel)
+            ? { set: getFilterValue(EFilters.skillLevel) }
+            : undefined,
+          goals: getFilterValue(EFilters.goals)
+            ? { set: getFilterValue(EFilters.goals) }
+            : undefined,
+        };
+
+        let updatedFilters;
+        if (user.filtersId) {
+          updatedFilters = await prisma.filters.update({
+            where: {
+              id: user.filtersId,
+            },
+            data: filtersData,
+          });
+        } else {
+          updatedFilters = await prisma.filters.create({
+            data: filtersData,
+          });
+        }
+
+        const updatedUser = await prisma.user.update({
+          where: {
+            id: user.id,
+          },
+          data: {
+            filters: {
+              connect: {
+                id: updatedFilters.id,
+              },
+            },
+          },
+          include: {
+            filters: true,
+            feed: true,
+          },
+        });
+
+        // filter the feed based on the filters
+        // Define filter functions
+        type FilterFunction = <T>(
+          feedUser: Record<string, T>,
+          filter: Record<string, T | null>
+        ) => boolean;
+        type TFilter = Record<
+          string,
+          string | number | boolean | string[] | Date | null
+        >;
+
+        const filterFunctions: FilterFunction[] = [
+          (feedUser, filter) =>
+            filter.goingToday === null ||
+            feedUser.goingToday === filter.goingToday,
+          (feedUser, filter) =>
+            !filter.workout || feedUser.workout === filter.workout,
+          (feedUser, filter) =>
+            !filter.gender || feedUser.gender === filter.gender,
+          (feedUser, filter) =>
+            !filter.skillLevel || feedUser.skillLevel === filter.skillLevel,
+          (feedUser, filter) =>
+            !filter.goals || feedUser.goals === filter.goals,
+        ];
+
+        // Filter the feed based on the filters
+        const filteredFeed = user.feed.filter((feedUser) => {
+          if (updatedUser.filters) {
+            return filterFunctions.every((filterFunc) =>
+              filterFunc(feedUser, updatedUser.filters as TFilter)
+            );
+          }
+          return false;
+        });
+
+        res.status(200).json({
+          feed: filteredFeed,
+        });
       }
     } catch (error) {
       console.log(error);

@@ -9,6 +9,7 @@ import {
   editSplit,
   editUser,
   editUserDashboard,
+  filterFeed,
   findNearByUsers,
   findUserById,
   getUserByToken,
@@ -23,6 +24,10 @@ const userRouter = express.Router();
 userRouter.get(
   '/users/getNearByUsers/:token',
   async (req, res) => await findNearByUsers({ req, res })
+);
+userRouter.post(
+  '/users/filter/',
+  async (req, res) => await filterFeed({ req, res })
 );
 
 userRouter.get(
