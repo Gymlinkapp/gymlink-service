@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient, User } from '@prisma/client';
 import { Request } from 'express';
 import { decode } from 'jsonwebtoken';
 import { JWT, Params } from '../types';
@@ -6,6 +6,11 @@ import { findNearUsers } from '../util/user/getNearByUsers';
 
 const prisma = new PrismaClient();
 
+/**
+ * Find all users that are not in the current user's chat list and are not the current user, and add
+ * them to the current user's feed
+ * @param {Params}  - Params - This is the type of the parameters that are passed to the function.
+ */
 export const findNearByUsers = async ({ req, res }: Params) => {
   const { token } = req.params;
 
@@ -67,6 +72,32 @@ export const findNearByUsers = async ({ req, res }: Params) => {
         });
 
         res.status(200).json(userWithFeed.feed);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  } else {
+    res.status(401).json({ message: 'Unauthorized' });
+  }
+};
+
+export const filterFeed = async ({ req, res }: Params) => {
+  const { token } = req.params;
+
+  const decoded = decode(token as string) as JWT;
+  if (decoded) {
+    try {
+      const user = await prisma.user.findUnique({
+        where: {
+          email: decoded.email,
+        },
+        include: {
+          feed: true,
+          filters: true,
+        },
+      });
+      if (user) {
+        res.status(200).json({});
       }
     } catch (error) {
       console.log(error);

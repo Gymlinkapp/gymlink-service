@@ -31,7 +31,8 @@ model User {
   feed   User[] @relation("UserFeed")
   feedOf User[] @relation("UserFeed")
 
-  seen String[]
+  seen    String[]
+  filters Filters? @relation(fields: [filtersId], references: [id])
 
   // social aspects
   chats   Chat[]    @relation("participants")
@@ -56,6 +57,7 @@ model User {
   Chat      Chat?
   splitId   String?
   userId    String?
+  filtersId String?
 }
 
 model Gym {
@@ -114,4 +116,41 @@ model Message {
 
   content String
   chat    Chat   @relation(fields: [chatId], references: [id])
+}
+
+model Filters {
+  id         String       @id @default(cuid())
+  goingToday Boolean      @default(false)
+  workout    Workout[]    @default([])
+  skillLevel SkillLevel[] @default([])
+  gender     Gender[]     @default([])
+  goals      Goals[]      @default([])
+  User       User[]
+}
+
+enum Workout {
+  CHEST
+  BACK
+  LEGS
+  SHOULDERS
+  BICEPS
+  TRICEPS
+}
+
+enum SkillLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum Goals {
+  WEIGHT_LOSS
+  WEIGHT_GAIN
+  MUSCLE_GAIN
+  MUSCLE_LOSS
 }
