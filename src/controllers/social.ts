@@ -1,12 +1,20 @@
 import { PrismaClient } from '@prisma/client';
 import { JWT, Params } from '../types';
 import { decode } from 'jsonwebtoken';
+import { FastifyReply, FastifyRequest } from 'fastify';
 
 const prisma = new PrismaClient();
 
-export const LinkWithUser = async ({ req, res }: Params) => {
-  // find the friend request
-  const { fromUserId, toUserId, token } = req.body;
+export const LinkWithUser = async (
+  request: FastifyRequest,
+  reply: FastifyReply
+) => {
+  type RequestBdy = {
+    fromUserId: string;
+    toUserId: string;
+    token: string;
+  };
+  const { fromUserId, toUserId, token } = request.body as RequestBdy;
   try {
     const decoded = decode(token) as JWT;
     const user = await prisma.user.findUnique({
@@ -17,7 +25,7 @@ export const LinkWithUser = async ({ req, res }: Params) => {
 
     // check if the user is authorized with a token
     if (!user) {
-      res.status(401).json({ message: 'You are not authorized' });
+      reply.code(401).send({ message: 'You are not authorized' });
       return;
     }
 
@@ -65,7 +73,7 @@ export const LinkWithUser = async ({ req, res }: Params) => {
     });
 
     if (chat) {
-      res.status(200).json({ chat });
+      reply.code(200).send({ chat });
       return;
     }
     if (fromUser && toUser) {
@@ -118,7 +126,7 @@ export const LinkWithUser = async ({ req, res }: Params) => {
           },
         },
       });
-      res.status(200).json({
+      reply.code(200).send({
         chat: {
           name: chat.name,
           id: chat.id,
@@ -137,12 +145,12 @@ export const LinkWithUser = async ({ req, res }: Params) => {
     }
 
     if (!fromUser || !toUser) {
-      res.status(400).json({ message: 'User not found' });
+      reply.code(400).send({ message: 'User not found' });
       return;
     }
 
     if (fromUserId === toUserId) {
-      res.status(400).json({ message: 'You cannot link with yourself' });
+      reply.code(400).send({ message: 'You cannot link with yourself' });
       return;
     }
   } catch (error) {

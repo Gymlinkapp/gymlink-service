@@ -8,7 +8,7 @@ import { createClient } from '@supabase/supabase-js';
 import userRoutes from './routes/users';
 import authRoutes from './routes/auth';
 import { Chat, Location, PrismaClient } from '@prisma/client';
-import socialRouter from './routes/social';
+import socialRoutes from './routes/social';
 import chatRoutes from './routes/chats';
 import gymRoutes from './routes/gyms';
 import locationRoutes from './routes/locations';
@@ -27,7 +27,7 @@ app.register(authRoutes, { prefix: '/' });
 app.register(chatRoutes, { prefix: '/' });
 app.register(gymRoutes, { prefix: '/' });
 app.register(locationRoutes, { prefix: '/' });
-// app.register(socialRouter, { prefix: '/' });
+app.register(socialRoutes, { prefix: '/' });
 
 const server = http.createServer((req, res) => {
   app.ready((err) => {
@@ -164,7 +164,7 @@ io.on('connection', (socket) => {
 
 const start = async () => {
   try {
-    await app.listen({ port: 3000 });
+    await app.listen({ port: 3000, host: '10.0.1.198' });
     app.log.info(`Server listening on ${app.server.address()}`);
   } catch (err) {
     app.log.error(err);
