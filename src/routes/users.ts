@@ -1,5 +1,3 @@
-import express from 'express';
-import multer from 'multer';
 import {
   addGym,
   allUsers,
@@ -24,7 +22,7 @@ import { RequestGeneric, Router } from '../../src/types';
 
 const userRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
   fastify.get<RequestGeneric>(
-    '/users/getNearByUsers/:token',
+    '/users/getNearByUsers',
     async (request, reply) => await findNearByUsers({ request, reply })
   );
 
@@ -34,7 +32,7 @@ const userRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
   );
 
   fastify.get<RequestGeneric>(
-    '/users/getByToken/:token',
+    '/users/getByToken',
     async (request, reply) => await getUserByToken({ request, reply })
   );
 

@@ -11,7 +11,10 @@ const prisma = new PrismaClient();
  * @param {Params}  - Params - This is the type of the parameters that are passed to the function.
  */
 export const findNearByUsers = async ({ request, reply }: Params) => {
-  const { token } = request.params;
+  type RequestQuery = {
+    token: string;
+  };
+  const { token } = request.query as RequestQuery;
 
   const decoded = decode(token as string) as JWT;
   if (decoded) {
@@ -110,9 +113,13 @@ export const filterFeed = async ({ request, reply }: Params) => {
 };
 
 export const getUserByToken = async ({ request, reply }: Params) => {
-  const { token } = request.params;
+  type RequestQuery = {
+    token: string;
+  };
+  const { token } = request.query as RequestQuery;
+  console.log(token);
 
-  const decoded = decode(token as string) as JWT;
+  const decoded = decode(token) as JWT;
   if (decoded) {
     try {
       const user = await prisma.user.findUnique({
