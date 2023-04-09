@@ -12,6 +12,7 @@ import chatsRouter from './routes/chats';
 import gymRouter from './routes/gyms';
 import locationRouter from './routes/locations';
 import socialRouter from './routes/social';
+import chatRoutes from './routes/chats';
 const prisma = new PrismaClient();
 
 export const supabase = createClient(
@@ -24,7 +25,7 @@ app.register(cors);
 
 app.register(userRoutes, { prefix: '/' });
 app.register(authRoutes, { prefix: '/' });
-// app.register(chatsRouter, { prefix: '/' });
+app.register(chatRoutes, { prefix: '/' });
 // app.register(gymRouter, { prefix: '/' });
 // app.register(locationRouter, { prefix: '/' });
 // app.register(socialRouter, { prefix: '/' });
