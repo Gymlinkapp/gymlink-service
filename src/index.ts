@@ -171,7 +171,7 @@ const start = async () => {
   try {
     await app.listen({ port: port, host: host });
     app.log.info(`Server listening on ${app.server.address()}`);
-    console.log(`Server listening on ${app.server.address()}`);
+    console.log(`Server started on port 3000`);
   } catch (err) {
     app.log.error(err);
     process.exit(1);
