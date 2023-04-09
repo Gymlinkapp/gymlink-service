@@ -162,9 +162,13 @@ io.on('connection', (socket) => {
   });
 });
 
+const host =
+  process.env.ENV === 'development'
+    ? process.env.DEVELOPMENT_HOST
+    : 'localhost';
 const start = async () => {
   try {
-    await app.listen({ port: 3000, host: '10.0.1.198' });
+    await app.listen({ port: 3000, host: host });
     app.log.info(`Server listening on ${app.server.address()}`);
   } catch (err) {
     app.log.error(err);
