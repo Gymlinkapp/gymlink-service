@@ -166,9 +166,10 @@ const host =
   process.env.ENV === 'development'
     ? process.env.DEVELOPMENT_HOST
     : 'localhost';
+const port = (process.env.PORT as unknown as number) || 3000;
 const start = async () => {
   try {
-    await app.listen({ port: 3000, host: host });
+    await app.listen({ port: port, host: host });
     app.log.info(`Server listening on ${app.server.address()}`);
     console.log(`Server listening on ${app.server.address()}`);
   } catch (err) {
