@@ -19,7 +19,7 @@ export const supabase = createClient(
   process.env.SUPABASE_API_KEY || ''
 );
 
-const app = Fastify({ logger: true });
+const app = Fastify({ logger: process.env.NODE_ENV === 'development' });
 app.register(cors);
 
 app.register(userRoutes, { prefix: '/' });
@@ -170,6 +170,7 @@ const start = async () => {
   try {
     await app.listen({ port: 3000, host: host });
     app.log.info(`Server listening on ${app.server.address()}`);
+    console.log(`Server listening on ${app.server.address()}`);
   } catch (err) {
     app.log.error(err);
     process.exit(1);
