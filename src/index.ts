@@ -8,10 +8,10 @@ import { createClient } from '@supabase/supabase-js';
 import userRoutes from './routes/users';
 import authRoutes from './routes/auth';
 import { Chat, Location, PrismaClient } from '@prisma/client';
-import locationRouter from './routes/locations';
 import socialRouter from './routes/social';
 import chatRoutes from './routes/chats';
 import gymRoutes from './routes/gyms';
+import locationRoutes from './routes/locations';
 const prisma = new PrismaClient();
 
 export const supabase = createClient(
@@ -26,7 +26,7 @@ app.register(userRoutes, { prefix: '/' });
 app.register(authRoutes, { prefix: '/' });
 app.register(chatRoutes, { prefix: '/' });
 app.register(gymRoutes, { prefix: '/' });
-// app.register(locationRouter, { prefix: '/' });
+app.register(locationRoutes, { prefix: '/' });
 // app.register(socialRouter, { prefix: '/' });
 
 const server = http.createServer((req, res) => {
