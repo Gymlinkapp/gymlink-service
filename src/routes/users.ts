@@ -16,7 +16,7 @@ import {
 } from '../controllers/users';
 import { uploadUserImage } from '../controllers/userImages';
 import { FastifyInstance, FastifyPluginAsync } from 'fastify';
-import { RequestGeneric, Router } from '../../src/types';
+import { RequestGeneric } from '../../src/types';
 
 // const userRouter = express.Router();
 

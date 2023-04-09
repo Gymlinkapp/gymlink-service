@@ -2,7 +2,6 @@ import { PrismaClient } from '@prisma/client';
 import { Twilio } from 'twilio';
 import { sign, verify } from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
-import { isUserSignedIn } from '../util/user/helpers';
 import { JWT } from '../types';
 import { FastifyPluginAsync } from 'fastify';
 
@@ -15,7 +14,7 @@ const randomVerificationCode = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
-const authRoutes: FastifyPluginAsync = async (fastify, opts) => {
+const authRoutes: FastifyPluginAsync = async (fastify, _) => {
   fastify.post('/auth/sendsms', async (request, reply) => {
     const generatedVerificationCode = randomVerificationCode();
     type requestbdy = {

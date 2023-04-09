@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { JWT, Params } from '../types';
+import { JWT } from '../types';
 import { decode } from 'jsonwebtoken';
 import { FastifyReply, FastifyRequest } from 'fastify';
 

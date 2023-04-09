@@ -1,4 +1,4 @@
-import { Gym, Prisma, PrismaClient, User } from '@prisma/client';
+import { Gym, PrismaClient } from '@prisma/client';
 import { JWT, Params } from '../types';
 import { findNearUsers } from '../util/user/getNearByUsers';
 import { decode } from 'jsonwebtoken';

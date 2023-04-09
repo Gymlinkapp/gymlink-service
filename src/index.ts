@@ -7,7 +7,7 @@ import { createClient } from '@supabase/supabase-js';
 
 import userRoutes from './routes/users';
 import authRoutes from './routes/auth';
-import { Chat, Location, PrismaClient } from '@prisma/client';
+import { Chat, PrismaClient } from '@prisma/client';
 import socialRoutes from './routes/social';
 import chatRoutes from './routes/chats';
 import gymRoutes from './routes/gyms';

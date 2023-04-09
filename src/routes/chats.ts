@@ -1,5 +1,4 @@
-import fastify, { FastifyPluginAsync } from 'fastify';
-import { PrismaClient, User } from '@prisma/client';
+import { FastifyPluginAsync } from 'fastify';
 import {
   createChat,
   getChatById,
@@ -22,7 +21,7 @@ const chatRoutes: FastifyPluginAsync = async (fastify, opts) => {
     async (request, reply) => await getChatById(request, reply)
   );
   // delete chat
-  fastify.delete('/chats/:chatId', async (req, res) => {});
+  // fastify.delete('/chats/:chatId', async (req, res) => {});
 };
 
 export default chatRoutes;

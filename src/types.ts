@@ -3,7 +3,6 @@ import {
   RouteOptions,
   FastifyRequest,
   FastifyReply,
-  RouteGenericInterface,
   RequestGenericInterface,
 } from 'fastify';
 import { IncomingMessage, Server, ServerResponse } from 'http';
