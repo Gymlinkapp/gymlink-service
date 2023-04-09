@@ -14,6 +14,7 @@ specifiers:
   '@typescript-eslint/parser': ^5.57.1
   bcrypt: ^5.1.0
   cors: ^2.8.5
+  dotenv: ^16.0.3
   eslint: ^8.38.0
   eslint-plugin-import: ^2.27.5
   express: ^4.18.2
@@ -33,6 +34,7 @@ dependencies:
   '@supabase/supabase-js': 2.1.0
   bcrypt: 5.1.0
   cors: 2.8.5
+  dotenv: 16.0.3
   fastify: 4.15.0
   jsonwebtoken: 8.5.1
   multer: 1.4.5-lts.1
@@ -1068,6 +1070,11 @@ packages:
     dependencies:
       esutils: 2.0.3
     dev: true
+
+  /dotenv/16.0.3:
+    resolution: {integrity: sha512-7GO6HghkA5fYG9TYnNxi14/7K9f5occMlp3zXAuSxn7CKCxt9xbNWG7yF8hTCSUchlfWSe3uLmlPfigevRItzQ==}
+    engines: {node: '>=12'}
+    dev: false
 
   /ecdsa-sig-formatter/1.0.11:
     resolution: {integrity: sha512-nagl3RYrbNv6kQkeJIpt6NJZy8twLB/2vtz6yN9Z4vRKHN4/QZJIEbqohALSgwKdnksuY3k5Addp5lg8sVoVcQ==}
