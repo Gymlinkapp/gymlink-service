@@ -1,19 +1,21 @@
-import { PrismaClient, User } from '@prisma/client';
-import express from 'express';
+import { PrismaClient } from '@prisma/client';
+import { FastifyPluginAsync } from 'fastify';
 
 const prisma = new PrismaClient();
 
-const gymRouter = express.Router();
-
-// get gym by id
-gymRouter.get('/gyms/:gymId', async (req, res) => {
-  const { gymId } = req.params;
-  const gym = await prisma.gym.findFirst({
-    where: {
-      id: gymId,
-    },
+const gymRoutes: FastifyPluginAsync = async (fastify, opts) => {
+  fastify.get('/gyms/:gymId', async (request, reply) => {
+    type RequestBdy = {
+      gymId: string;
+    };
+    const { gymId } = request.params as RequestBdy;
+    const gym = await prisma.gym.findFirst({
+      where: {
+        id: gymId,
+      },
+    });
+    reply.code(200).send(gym);
   });
-  res.status(200).json(gym);
-});
+};
 
-export default gymRouter;
+export default gymRoutes;

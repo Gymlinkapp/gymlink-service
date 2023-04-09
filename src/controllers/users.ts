@@ -1,13 +1,20 @@
-import { PrismaClient } from '@prisma/client';
-import { Request } from 'express';
-import { decode } from 'jsonwebtoken';
+import { Gym, PrismaClient } from '@prisma/client';
 import { JWT, Params } from '../types';
 import { findNearUsers } from '../util/user/getNearByUsers';
+import { decode } from 'jsonwebtoken';
 
 const prisma = new PrismaClient();
 
-export const findNearByUsers = async ({ req, res }: Params) => {
-  const { token } = req.params;
+/**
+ * Find all users that are not in the current user's chat list and are not the current user, and add
+ * them to the current user's feed
+ * @param {Params}  - Params - This is the type of the parameters that are passed to the function.
+ */
+export const findNearByUsers = async ({ request, reply }: Params) => {
+  type RequestQuery = {
+    token: string;
+  };
+  const { token } = request.query as RequestQuery;
 
   const decoded = decode(token as string) as JWT;
   if (decoded) {
@@ -66,20 +73,53 @@ export const findNearByUsers = async ({ req, res }: Params) => {
           },
         });
 
-        res.status(200).json(userWithFeed.feed);
+        reply.code(200).send(userWithFeed.feed);
       }
     } catch (error) {
       console.log(error);
     }
   } else {
-    res.status(401).json({ message: 'Unauthorized' });
+    reply.code(401).send({ message: 'Unauthorized' });
   }
 };
 
-export const getUserByToken = async ({ req, res }: Params) => {
-  const { token } = req.params;
+export const filterFeed = async ({ request, reply }: Params) => {
+  const { token } = request.body;
 
   const decoded = decode(token as string) as JWT;
+  if (decoded) {
+    try {
+      const user = await prisma.user.findUnique({
+        where: {
+          email: decoded.email,
+        },
+        include: {
+          feed: true,
+        },
+      });
+      if (user) {
+        // e.g. request.body = { filters: [ { filter: "goingToday", value: true }, { filter: "workout", value: ["back"] }, { filter: "gender", value: ["male", "female"] } ] }
+
+        reply.code(200).send({
+          feed: [],
+        });
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  } else {
+    reply.code(401).send({ message: 'Unauthorized' });
+  }
+};
+
+export const getUserByToken = async ({ request, reply }: Params) => {
+  type RequestQuery = {
+    token: string;
+  };
+  const { token } = request.query as RequestQuery;
+  console.log(token);
+
+  const decoded = decode(token) as JWT;
   if (decoded) {
     try {
       const user = await prisma.user.findUnique({
@@ -105,20 +145,20 @@ export const getUserByToken = async ({ req, res }: Params) => {
         },
       });
       if (user) {
-        res.status(200).json(user);
+        reply.code(200).send(user);
       }
     } catch (error) {
       console.log(error);
     }
   } else {
-    res.status(401).json({ message: 'Unauthorized' });
+    reply.code(401).send({ message: 'Unauthorized' });
   }
 };
 
-export const updateAuthSteps = async ({ req, res }: Params) => {
-  const { token } = req.body;
+export const updateAuthSteps = async ({ request, reply }: Params) => {
+  const { token } = request.body;
 
-  const decoded = decode(token) as JWT;
+  const decoded = decode(token as string) as JWT;
 
   try {
     const user = await prisma.user.findUnique({
@@ -132,21 +172,21 @@ export const updateAuthSteps = async ({ req, res }: Params) => {
           id: user.id,
         },
         data: {
-          authSteps: req.body.authSteps,
+          authSteps: request.body.authSteps as number,
         },
       });
-      res.status(200).json(updatedUser);
+      reply.code(200).send(updatedUser);
     }
   } catch (error) {
     console.log(error);
   }
 };
 
-export const editUser = async ({ req, res }: Params) => {
-  const { token } = req.body;
+export const editUser = async ({ request, reply }: Params) => {
+  const { token } = request.body;
 
   // find user
-  const decoded = decode(token) as JWT;
+  const decoded = decode(token as string) as JWT;
   try {
     const user = await prisma.user.findFirst({
       where: {
@@ -154,28 +194,28 @@ export const editUser = async ({ req, res }: Params) => {
       },
     });
 
-    if (user && req.body.tags) {
+    if (user && request.body.tags) {
       const updatedUser = await prisma.user.update({
         where: {
           id: user.id,
         },
         data: {
-          tags: req.body.tags,
-          authSteps: req.body.authSteps,
+          tags: request.body.tags,
+          authSteps: request.body.authSteps as number,
         },
       });
-      res.status(200).json(updatedUser);
+      reply.code(200).send(updatedUser);
     } else {
       const updatedUser = await prisma.user.update({
         where: {
           email: decoded.email,
         },
         data: {
-          // ...req.body except token,
-          ...req.body,
+          // ...request.body except token,
+          ...request.body,
         },
       });
-      res.status(200).json(updatedUser);
+      reply.code(200).send(updatedUser);
     }
 
     // if the user is signedin
@@ -183,8 +223,8 @@ export const editUser = async ({ req, res }: Params) => {
     console.log(error);
   }
 };
-export const editUserDashboard = async ({ req, res }: Params) => {
-  const { id } = req.params;
+export const editUserDashboard = async ({ request, reply }: Params) => {
+  const { id } = request.params;
 
   try {
     const updatedUser = await prisma.user.update({
@@ -192,11 +232,11 @@ export const editUserDashboard = async ({ req, res }: Params) => {
         id: id,
       },
       data: {
-        // ...req.body except token,
-        ...req.body,
+        // ...request.body except token,
+        ...request.body,
       },
     });
-    res.status(200).json(updatedUser);
+    reply.code(200).send(updatedUser);
 
     // if the user is signedin
   } catch (error) {
@@ -204,8 +244,8 @@ export const editUserDashboard = async ({ req, res }: Params) => {
   }
 };
 
-export const deleteUser = async ({ req, res }: Params) => {
-  const { token } = req.params;
+export const deleteUser = async ({ request, reply }: Params) => {
+  const { token } = request.params;
   const decoded = decode(token as string) as JWT;
   try {
     const user = await prisma.user.findFirst({
@@ -246,15 +286,15 @@ export const deleteUser = async ({ req, res }: Params) => {
         },
       });
     }
-    res.json(user);
+    reply.send(user);
   } catch (error) {
     console.log(error);
   }
 };
 
-// reset user's state
-export const resetUser = async ({ req, res }: Params) => {
-  const { token } = req.params;
+// replyet user's state
+export const replyetUser = async ({ request, reply }: Params) => {
+  const { token } = request.params;
   const decoded = decode(token as string) as JWT;
   try {
     const user = await prisma.user.findFirst({
@@ -288,15 +328,16 @@ export const resetUser = async ({ req, res }: Params) => {
         },
       });
     }
-    res.json(user);
+    reply.send(user);
   } catch (error) {
     console.log(error);
   }
 };
 
-export const createSplit = async ({ req, res }: Params) => {
-  const { token, split } = req.body;
-  const decoded = decode(token) as JWT;
+export const createSplit = async ({ request, reply }: Params) => {
+  const { token } = request.body;
+  const { split } = request.body as { split: any[] };
+  const decoded = decode(token as string) as JWT;
   const user = await prisma.user.findUnique({
     where: {
       email: decoded.email,
@@ -304,9 +345,9 @@ export const createSplit = async ({ req, res }: Params) => {
   });
   if (user) {
     if (split.length < 1) {
-      return res.status(400).json({
+      return reply.code(400).send({
         message:
-          "Empty exercises. You must fill each day, it's okay to take rest days!",
+          "Empty exercises. You must fill each day, it's okay to take replyt days!",
       });
     }
     const newSplit = await prisma.split.create({
@@ -335,15 +376,16 @@ export const createSplit = async ({ req, res }: Params) => {
         authSteps: 6,
       },
     });
-    res.status(200).json(newSplit);
+    reply.code(200).send(newSplit);
   } else {
-    res.status(401).json({ message: 'Unauthorized' });
+    reply.code(401).send({ message: 'Unauthorized' });
   }
 };
 
-export const editSplit = async ({ req, res }: Params) => {
-  const { token, split } = req.body;
-  const decoded = decode(token) as JWT;
+export const editSplit = async ({ request, reply }: Params) => {
+  const { token } = request.body;
+  const { split } = request.body as { split: any[] };
+  const decoded = decode(token as string) as JWT;
   const user = await prisma.user.findUnique({
     where: {
       email: decoded.email,
@@ -351,9 +393,9 @@ export const editSplit = async ({ req, res }: Params) => {
   });
   if (user) {
     if (split.length < 1) {
-      return res.status(400).json({
+      return reply.code(400).send({
         message:
-          "Empty exercises. You must fill each day, it's okay to take rest days!",
+          "Empty exercises. You must fill each day, it's okay to take replyt days!",
       });
     }
     const updatedSplit = await prisma.split.update({
@@ -371,17 +413,18 @@ export const editSplit = async ({ req, res }: Params) => {
         sunday: split[6]?.exercises || [],
       },
     });
-    res.status(200).json(updatedSplit);
+    reply.code(200).send(updatedSplit);
   } else {
-    res.status(401).json({ message: 'Unauthorized' });
+    reply.code(401).send({ message: 'Unauthorized' });
   }
 };
 
-export const addGym = async ({ req, res }: Params) => {
-  const { token } = req.body;
+export const addGym = async ({ request, reply }: Params) => {
+  const { token } = request.body;
+  const { name } = request.body as Gym;
 
   // find user
-  const decoded = decode(token) as JWT;
+  const decoded = decode(token as string) as JWT;
   try {
     const user = await prisma.user.findFirst({
       where: {
@@ -394,7 +437,7 @@ export const addGym = async ({ req, res }: Params) => {
       // get gyms and check if the gym exists
       const gym = await prisma.gym.findFirst({
         where: {
-          name: req.body.gym.name,
+          name: name,
         },
       });
 
@@ -405,10 +448,10 @@ export const addGym = async ({ req, res }: Params) => {
             id: user.id,
           },
           data: {
-            bio: req.body.bio,
-            longitude: req.body.longitude,
-            latitude: req.body.latitude,
-            authSteps: req.body.authSteps, // 4
+            bio: request.body.bio as string,
+            longitude: request.body.longitude as number,
+            latitude: request.body.latitude as number,
+            authSteps: request.body.authSteps as number, // 4
             gym: {
               connect: {
                 id: gym.id,
@@ -431,16 +474,18 @@ export const addGym = async ({ req, res }: Params) => {
             },
           },
         });
-        res.status(200).json(updatedUser2);
+        reply.code(200).send(updatedUser2);
       } else {
         // gym doesn't exist so create it
         const newGym = await prisma.gym.create({
           data: {
-            name: req.body.gym.name,
+            name: name,
             location: {
               create: {
-                lat: req.body.gym.latitude,
-                long: req.body.gym.longitude,
+                // @ts-expect-error - gym location is coming from body
+                lat: request.body.gym.latitude,
+                // @ts-expect-error - gym location is coming from body
+                long: request.body.gym.longitude,
               },
             },
           },
@@ -452,10 +497,12 @@ export const addGym = async ({ req, res }: Params) => {
             id: user.id,
           },
           data: {
-            bio: req.body.bio,
-            longitude: req.body.longitude,
-            latitude: req.body.latitude,
-            authSteps: req.body.authSteps,
+            bio: request.body.bio as string,
+            // @ts-expect-error - gym location is coming from body
+            longitude: request.body.longitude,
+            // @ts-expect-error - gym location is coming from body
+            latitude: request.body.latitude,
+            authSteps: request.body.authSteps as number,
             gym: {
               connect: {
                 id: newGym.id,
@@ -480,20 +527,20 @@ export const addGym = async ({ req, res }: Params) => {
         });
 
         // new gym with user should work so return the newly updated user with the new gym.
-        res.status(200).json(updatedUser2);
+        reply.code(200).send(updatedUser2);
       }
     } else {
-      res.status(401).json({ message: 'Unable to join gym' });
+      reply.code(401).send({ message: 'Unable to join gym' });
       console.log('nope');
     }
   } catch {
-    res.status(401).json({ message: 'Unauthorized' });
+    reply.code(401).send({ message: 'Unauthorized' });
     console.log('nope');
   }
 };
 
-export const findUserById = async ({ req, res }: Params) => {
-  const { userId } = req.params;
+export const findUserById = async ({ request, reply }: Params) => {
+  const { userId } = request.params;
   try {
     const user = await prisma.user.findUnique({
       where: {
@@ -503,7 +550,7 @@ export const findUserById = async ({ req, res }: Params) => {
         split: true,
       },
     });
-    res.json(user);
+    reply.send(user);
   } catch (error) {
     console.log(error);
   }
@@ -514,9 +561,9 @@ export const findUserById = async ({ req, res }: Params) => {
  * in the seen array
  * @param {Params}  - Params - this is the type of the parameters that are passed into the function.
  */
-export const seeUser = async ({ req, res }: Params) => {
-  const { token, seenUserId } = req.body;
-  const decoded = decode(token) as JWT;
+export const seeUser = async ({ request, reply }: Params) => {
+  const { token, seenUserId } = request.body;
+  const decoded = decode(token as string) as JWT;
   try {
     // get user
     const user = await prisma.user.findUnique({
@@ -527,13 +574,13 @@ export const seeUser = async ({ req, res }: Params) => {
     });
     if (user) {
       // if there is a user found, update the seen array with the seen user id if the seen user id is not already in the seen array
-      if (!user.seen.includes(seenUserId)) {
+      if (!user.seen.includes(seenUserId as string)) {
         const userWithSeenOther = await prisma.user.update({
           where: {
             id: user.id,
           },
           data: {
-            seen: { push: seenUserId },
+            seen: { push: seenUserId as string },
           },
           include: {
             feed: true,
@@ -561,18 +608,18 @@ export const seeUser = async ({ req, res }: Params) => {
           },
         });
 
-        res.status(200).json({ user: updatedUser });
+        reply.code(200).send({ user: updatedUser });
       }
     } else {
-      res.status(401).json({ message: 'Unauthorized' });
+      reply.code(401).send({ message: 'Unauthorized' });
     }
   } catch (error) {
     console.log(error);
   }
 };
 
-export const allUsers = async ({ req, res }: Params) => {
-  const { page } = req.params;
+export const allUsers = async ({ request, reply }: Params) => {
+  const { page } = request.params;
   try {
     const users = await prisma.user.findMany({});
     // pagination for users
@@ -583,14 +630,14 @@ export const allUsers = async ({ req, res }: Params) => {
     //     createdAt: 'desc',
     //   },
     // });
-    res.json(users);
+    reply.send(users);
   } catch (error) {
     console.log(error);
   }
 };
 
-export const dashboardUserDelete = async ({ req, res }: Params) => {
-  const { id } = req.params;
+export const dashboardUserDelete = async ({ request, reply }: Params) => {
+  const { id } = request.params;
   try {
     const user = await prisma.user.findFirst({
       where: {
@@ -630,7 +677,7 @@ export const dashboardUserDelete = async ({ req, res }: Params) => {
         },
       });
     }
-    res.json(user);
+    reply.send(user);
   } catch (error) {
     console.log(error);
   }

@@ -1,17 +1,17 @@
-import express from 'express';
+import Fastify from 'fastify';
 import { Server } from 'socket.io';
 import http from 'http';
-import cors from 'cors';
+import cors from '@fastify/cors';
 
 import { createClient } from '@supabase/supabase-js';
 
-import userRouter from './routes/users';
-import authRouter from './routes/auth';
-import { Chat, Location, PrismaClient } from '@prisma/client';
-import chatsRouter from './routes/chats';
-import gymRouter from './routes/gyms';
-import locationRouter from './routes/locations';
-import socialRouter from './routes/social';
+import userRoutes from './routes/users';
+import authRoutes from './routes/auth';
+import { Chat, PrismaClient } from '@prisma/client';
+import socialRoutes from './routes/social';
+import chatRoutes from './routes/chats';
+import gymRoutes from './routes/gyms';
+import locationRoutes from './routes/locations';
 const prisma = new PrismaClient();
 
 export const supabase = createClient(
@@ -19,18 +19,22 @@ export const supabase = createClient(
   process.env.SUPABASE_API_KEY || ''
 );
 
-const app = express();
-app.use(express.json({ limit: '200mb' }));
-app.use(cors());
+const app = Fastify({ logger: true });
+app.register(cors);
 
-app.use('/', userRouter);
-app.use('/', authRouter);
-app.use('/', chatsRouter);
-app.use('/', gymRouter);
-app.use('/', locationRouter);
-app.use('/', socialRouter);
+app.register(userRoutes, { prefix: '/' });
+app.register(authRoutes, { prefix: '/' });
+app.register(chatRoutes, { prefix: '/' });
+app.register(gymRoutes, { prefix: '/' });
+app.register(locationRoutes, { prefix: '/' });
+app.register(socialRoutes, { prefix: '/' });
 
-const server = http.createServer(app);
+const server = http.createServer((req, res) => {
+  app.ready((err) => {
+    if (err) throw err;
+    app.server.emit('request', req, res);
+  });
+});
 const io = new Server(server, {
   cors: {
     origin: '*',
@@ -158,6 +162,14 @@ io.on('connection', (socket) => {
   });
 });
 
-server.listen(process.env.PORT || 3000, () => {
-  console.log('Server started on port 3000');
-});
+const start = async () => {
+  try {
+    await app.listen({ port: 3000, host: '10.0.1.198' });
+    app.log.info(`Server listening on ${app.server.address()}`);
+  } catch (err) {
+    app.log.error(err);
+    process.exit(1);
+  }
+};
+
+start();
