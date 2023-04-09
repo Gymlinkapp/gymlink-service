@@ -163,9 +163,7 @@ io.on('connection', (socket) => {
 });
 
 const host =
-  process.env.ENV === 'development'
-    ? process.env.DEVELOPMENT_HOST
-    : 'localhost';
+  process.env.ENV === 'development' ? process.env.DEVELOPMENT_HOST : '0.0.0.0';
 const port = (process.env.PORT as unknown as number) || 3000;
 const start = async () => {
   try {
