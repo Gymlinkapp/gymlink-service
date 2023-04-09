@@ -6,7 +6,7 @@ import cors from '@fastify/cors';
 import { createClient } from '@supabase/supabase-js';
 
 import userRoutes from './routes/users';
-import authRouter from './routes/auth';
+import authRoutes from './routes/auth';
 import { Chat, Location, PrismaClient } from '@prisma/client';
 import chatsRouter from './routes/chats';
 import gymRouter from './routes/gyms';
@@ -23,7 +23,7 @@ const app = Fastify({ logger: true });
 app.register(cors);
 
 app.register(userRoutes, { prefix: '/' });
-// app.register(authRouter, { prefix: '/' });
+app.register(authRoutes, { prefix: '/' });
 // app.register(chatsRouter, { prefix: '/' });
 // app.register(gymRouter, { prefix: '/' });
 // app.register(locationRouter, { prefix: '/' });
