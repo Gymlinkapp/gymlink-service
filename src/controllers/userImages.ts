@@ -5,10 +5,10 @@ import { supabase } from '..';
 
 const prisma = new PrismaClient();
 
-export const uploadUserImage = async ({ req, res }: Params) => {
-  const { token, image } = req.body;
+export const uploadUserImage = async ({ request, reply }: Params) => {
+  const { token, image } = request.body;
 
-  const decoded = decode(token) as JWT;
+  const decoded = decode(token as string) as JWT;
   try {
     const user = await prisma.user.findUnique({
       where: {
@@ -17,11 +17,11 @@ export const uploadUserImage = async ({ req, res }: Params) => {
     });
 
     if (user && user.images.length > 5) {
-      res.status(400).json({ message: 'You can only have 5 images' });
+      reply.code(400).send({ message: 'You can only have 5 images' });
     }
 
     // create a buffer from the base64 encoded image.
-    const buffer = Buffer.from(image, 'base64');
+    const buffer = Buffer.from(image as any, 'base64');
     if (user) {
       const bucketPath = `user-${user.id}-${Math.random()}`;
       try {
@@ -44,21 +44,21 @@ export const uploadUserImage = async ({ req, res }: Params) => {
               images: [...user.images, url.data.publicUrl],
             },
           });
-          return res
-            .status(200)
-            .json({ message: 'success', user: updatedUser });
+          return reply
+            .code(200)
+            .send({ message: 'success', user: updatedUser });
         }
       } catch (error) {
         console.log(error);
 
-        res.status(500).json({ message: 'Internal Server Error' });
+        reply.code(500).send({ message: 'Internal Server Error' });
       }
-      return res.status(200).json({ message: 'success' });
+      return reply.code(200).send({ message: 'success' });
     } else {
-      res.status(401).json({ message: 'Unauthorized' });
+      reply.code(401).send({ message: 'Unauthorized' });
     }
   } catch (error) {
     console.log(error);
-    res.status(500).json({ message: 'Internal Server Error' });
+    reply.code(500).send({ message: 'Internal Server Error' });
   }
 };

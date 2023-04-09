@@ -17,85 +17,93 @@ import {
   updateAuthSteps,
 } from '../controllers/users';
 import { uploadUserImage } from '../controllers/userImages';
+import { FastifyInstance, FastifyPluginAsync } from 'fastify';
+import { RequestGeneric, Router } from '../../src/types';
 
-const userRouter = express.Router();
+// const userRouter = express.Router();
 
-// get users closest to the current user in a radius using the user's gym location (long, lat).
-userRouter.get(
-  '/users/getNearByUsers/:token',
-  async (req, res) => await findNearByUsers({ req, res })
-);
-userRouter.post(
-  '/users/filter/',
-  async (req, res) => await filterFeed({ req, res })
-);
+const userRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
+  fastify.get<RequestGeneric>(
+    '/users/getNearByUsers/:token',
+    async (request, reply) => await findNearByUsers({ request, reply })
+  );
 
-userRouter.get(
-  '/users/getByToken/:token',
-  async (req, res) => await getUserByToken({ req, res })
-);
+  fastify.post<RequestGeneric>(
+    '/users/filter',
+    async (request, reply) => await filterFeed({ request, reply })
+  );
 
-/* Uploading the image to the storage bucket and then updating the user with the image url. */
-const upload = multer({ dest: 'images' });
-userRouter.post(
-  '/users/images',
-  upload.single('image'),
-  async (req, res) => await uploadUserImage({ req, res })
-);
+  fastify.get<RequestGeneric>(
+    '/users/getByToken/:token',
+    async (request, reply) => await getUserByToken({ request, reply })
+  );
 
-// when a user scrolls on a user, they won't be able to see their profile again after swiping past.
-userRouter.post(
-  '/users/seeUser',
-  async (req, res) => await seeUser({ req, res })
-);
+  // To handle file uploads in Fastify, you can use the 'fastify-multer' plugin
+  // First, install it: npm install fastify-multer
+  // import fastifyMulter from 'fastify-multer';
+  // const upload = fastifyMulter({ dest: 'images' }).single('image');
 
-// edit a user
-userRouter.put('/users', async (req, res) => await editUser({ req, res }));
-userRouter.post(
-  '/users/authSteps',
-  async (req, res) => await updateAuthSteps({ req, res })
-);
+  // fastify.register(upload);
 
-userRouter.post(
-  '/users/addGym',
-  async (req, res) => await addGym({ req, res })
-);
+  fastify.post<RequestGeneric>(
+    '/users/images',
+    async (request, reply) => await uploadUserImage({ request, reply })
+  );
 
-// create a split for a user
-userRouter.post(
-  '/users/split',
-  async (req, res) => await createSplit({ req, res })
-);
+  fastify.post<RequestGeneric>(
+    '/users/seeUser',
+    async (request, reply) => await seeUser({ request, reply })
+  );
 
-// edit a split
-userRouter.put(
-  '/users/split',
-  async (req, res) => await editSplit({ req, res })
-);
+  fastify.put<RequestGeneric>(
+    '/users',
+    async (request, reply) => await editUser({ request, reply })
+  );
 
-userRouter.get(
-  '/users/findById/:userId',
-  async (req, res) => await findUserById({ req, res })
-);
+  fastify.post<RequestGeneric>(
+    '/users/authSteps',
+    async (request, reply) => await updateAuthSteps({ request, reply })
+  );
 
-// delete a user
-userRouter.delete(
-  '/users/:token',
-  async (req, res) => await deleteUser({ req, res })
-);
+  fastify.post<RequestGeneric>(
+    '/users/addGym',
+    async (request, reply) => await addGym({ request, reply })
+  );
 
-// userRouter.get(
-//   '/allUsers/:page',
-//   async (req, res) => await allUsers({ req, res })
-// );
-userRouter.get('/allUsers', async (req, res) => await allUsers({ req, res }));
-userRouter.delete(
-  '/dashboardUserDelete/:id',
-  async (req, res) => await dashboardUserDelete({ req, res })
-);
-userRouter.put(
-  '/dashboardEditUser/:id',
-  async (req, res) => await editUserDashboard({ req, res })
-);
+  fastify.post<RequestGeneric>(
+    '/users/split',
+    async (request, reply) => await createSplit({ request, reply })
+  );
 
-export default userRouter;
+  fastify.put<RequestGeneric>(
+    '/users/split',
+    async (request, reply) => await editSplit({ request, reply })
+  );
+
+  fastify.get<RequestGeneric>(
+    '/users/findById/:userId',
+    async (request, reply) => await findUserById({ request, reply })
+  );
+
+  fastify.delete<RequestGeneric>(
+    '/users/:token',
+    async (request, reply) => await deleteUser({ request, reply })
+  );
+
+  fastify.get<RequestGeneric>(
+    '/allUsers',
+    async (request, reply) => await allUsers({ request, reply })
+  );
+
+  fastify.delete<RequestGeneric>(
+    '/dashboardUserDelete/:id',
+    async (request, reply) => await dashboardUserDelete({ request, reply })
+  );
+
+  fastify.put<RequestGeneric>(
+    '/dashboardEditUser/:id',
+    async (request, reply) => await editUserDashboard({ request, reply })
+  );
+};
+
+export default userRoutes;

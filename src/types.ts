@@ -1,12 +1,34 @@
-import { Request, Response } from 'express';
+import {
+  FastifyInstance,
+  RouteOptions,
+  FastifyRequest,
+  FastifyReply,
+  RouteGenericInterface,
+  RequestGenericInterface,
+} from 'fastify';
+import { IncomingMessage, Server, ServerResponse } from 'http';
 export type JWT = {
   email: string;
   iat: number;
 };
 
-export type Params = {
-  req: Request<{
+export interface RequestGeneric extends RequestGenericInterface {
+  Params: {
     [key: string]: string;
-  }>;
-  res: Response;
+  };
+  Querystring: unknown;
+  Body: {
+    [key: string]: unknown;
+  };
+  Headers: unknown;
+}
+
+export type Params = {
+  request: FastifyRequest<RequestGeneric>;
+  reply: FastifyReply;
+};
+
+export type Router = {
+  fastify: FastifyInstance<Server, IncomingMessage, ServerResponse>;
+  opts: RouteOptions;
 };
