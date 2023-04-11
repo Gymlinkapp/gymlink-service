@@ -1,9 +1,48 @@
-import { Gym, PrismaClient } from '@prisma/client';
+import { Gym, PrismaClient, User } from '@prisma/client';
 import { JWT, Params } from '../types';
 import { findNearUsers } from '../util/user/getNearByUsers';
 import { decode } from 'jsonwebtoken';
+import { FilterType } from '../../src/util/filters';
 
 const prisma = new PrismaClient();
+
+const filterFeedHelper = (feed: User[], user: User) => {
+  return feed.filter((feedUser) => {
+    const isUserFilteredGender =
+      user.filterGender.length === 0 ||
+      user.filterGender.includes(feedUser.gender as string);
+
+    const isUserFilteredGoingToday =
+      user.filterGoingToday === false ||
+      feedUser.filterGoingToday === user.filterGoingToday;
+
+    const filteredUserWorkout =
+      user.filterWorkout.length === 0 ||
+      user.filterWorkout.some((workout) =>
+        feedUser.filterWorkout.includes(workout)
+      );
+
+    const filteredUserSkillLevel =
+      user.filterSkillLevel.length === 0 ||
+      user.filterSkillLevel.some((skillLevel) =>
+        feedUser.filterSkillLevel.includes(skillLevel)
+      );
+
+    const filteredUserGoals =
+      user.filterGoals.length === 0 ||
+      user.filterGoals.some((goal) => feedUser.filterGoals.includes(goal));
+
+    const shouldFilter =
+      isUserFilteredGender &&
+      isUserFilteredGoingToday &&
+      filteredUserWorkout &&
+      filteredUserSkillLevel &&
+      filteredUserGoals;
+
+    // Return true if all filter conditions are met
+    return shouldFilter;
+  });
+};
 
 /**
  * Find all users that are not in the current user's chat list and are not the current user, and add
@@ -15,7 +54,6 @@ export const findNearByUsers = async ({ request, reply }: Params) => {
     token: string;
   };
   const { token } = request.query as RequestQuery;
-
   const decoded = decode(token as string) as JWT;
   if (decoded) {
     try {
@@ -33,36 +71,34 @@ export const findNearByUsers = async ({ request, reply }: Params) => {
               },
             },
           },
+          feed: true,
         },
       });
       if (user) {
-        const users = await prisma.user.findMany({
-          where: {
-            id: {
-              notIn: user.chats.map((chat) => chat.user?.id as string),
-            },
-            AND: {
-              id: {
-                not: user.id,
-              },
-              chats: {
-                none: {
-                  user: {
-                    id: user.id,
-                  },
-                },
-              },
-            },
-          },
-        });
+        const users = await findNearUsers(user);
 
-        const userWithFeed = await prisma.user.update({
+        // remove users that are already in the user's chat list
+        let usersToAdd = users.filter(
+          (u) => !user.chats.some((c) => c.user?.id === u.id)
+        );
+
+        if (
+          user.filterGender.length > 0 ||
+          user.filterGoals.length > 0 ||
+          user.filterSkillLevel.length > 0 ||
+          user.filterWorkout.length > 0 ||
+          user.filterGoingToday === true ||
+          user.filterGoingToday === false
+        ) {
+          usersToAdd = filterFeedHelper(usersToAdd, user);
+        }
+        await prisma.user.update({
           where: {
             id: user.id,
           },
           data: {
             feed: {
-              connect: users.map((user) => ({
+              connect: usersToAdd.map((user) => ({
                 id: user.id,
               })),
             },
@@ -73,7 +109,7 @@ export const findNearByUsers = async ({ request, reply }: Params) => {
           },
         });
 
-        reply.code(200).send(userWithFeed.feed);
+        reply.code(200).send(usersToAdd);
       }
     } catch (error) {
       console.log(error);
@@ -84,7 +120,15 @@ export const findNearByUsers = async ({ request, reply }: Params) => {
 };
 
 export const filterFeed = async ({ request, reply }: Params) => {
-  const { token } = request.body;
+  type Filter = {
+    filter: string;
+    value: string[] | boolean[];
+  };
+  type RequestBdy = {
+    token: string;
+    filters: Filter[];
+  };
+  const { token, filters } = request.body as RequestBdy;
 
   const decoded = decode(token as string) as JWT;
   if (decoded) {
@@ -98,10 +142,38 @@ export const filterFeed = async ({ request, reply }: Params) => {
         },
       });
       if (user) {
-        // e.g. request.body = { filters: [ { filter: "goingToday", value: true }, { filter: "workout", value: ["back"] }, { filter: "gender", value: ["male", "female"] } ] }
+        const findFilterValue = (filterName: FilterType) => {
+          return filters.find((filter) => filter.filter === filterName)?.value;
+        };
+
+        // apply filters to user
+        const userWithFilters = await prisma.user.update({
+          where: {
+            id: user.id,
+          },
+          data: {
+            filterGoingToday: findFilterValue(
+              FilterType.GOING_TODAY
+            )?.[0] as boolean,
+            filterWorkout: findFilterValue(FilterType.WORKOUT_TYPE) as string[],
+            filterSkillLevel: findFilterValue(
+              FilterType.SKILL_LEVEL
+            ) as string[],
+            filterGender: findFilterValue(FilterType.GENDER) as string[],
+            filterGoals: findFilterValue(FilterType.GOALS) as string[],
+          },
+        });
+
+        type UserWithMatchingFilters = User & {
+          matchingFilters: number;
+        };
+
+        const filteredFeed = filterFeedHelper(user.feed, userWithFilters);
+
+        console.log(filteredFeed.map((user) => user.firstName));
 
         reply.code(200).send({
-          feed: [],
+          feed: filteredFeed,
         });
       }
     } catch (error) {
@@ -117,7 +189,6 @@ export const getUserByToken = async ({ request, reply }: Params) => {
     token: string;
   };
   const { token } = request.query as RequestQuery;
-  console.log(token);
 
   const decoded = decode(token) as JWT;
   if (decoded) {

@@ -15,17 +15,21 @@ export const findNearUsers = async (user: User): Promise<User[]> => {
       id: gym?.locationId,
     },
   });
+  if (!gymLocation) {
+    return [];
+  }
+
   const users = await prisma.user.findMany({
     where: {
       gym: {
         location: {
           lat: {
-            gte: gymLocation?.lat! - 0.5,
-            lte: gymLocation?.lat! + 0.5,
+            gte: gymLocation.lat - 0.5,
+            lte: gymLocation?.lat + 0.5,
           },
           long: {
-            gte: gymLocation?.long! - 0.5,
-            lte: gymLocation?.long! + 0.5,
+            gte: gymLocation?.long - 0.5,
+            lte: gymLocation?.long + 0.5,
           },
         },
       },
