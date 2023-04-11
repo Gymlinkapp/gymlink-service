@@ -19,11 +19,13 @@ export const supabase = createClient(
   process.env.SUPABASE_API_KEY || ''
 );
 
-const app = Fastify({ logger: process.env.NODE_ENV === 'development' });
+const app = Fastify({
+  logger: process.env.NODE_ENV === 'development',
+});
 app.register(cors);
 
 app.register(userRoutes, { prefix: '/' });
-app.register(authRoutes, { prefix: '/' });
+    app.register(authRoutes, { prefix: '/' });
 app.register(chatRoutes, { prefix: '/' });
 app.register(gymRoutes, { prefix: '/' });
 app.register(locationRoutes, { prefix: '/' });
